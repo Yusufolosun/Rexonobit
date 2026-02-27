@@ -1,0 +1,114 @@
+# ============================================================
+# REXONOBIT — .gitignore
+# Security-hardened: never commit secrets to version control
+# ============================================================
+
+# ----------------------------------------------------------------
+# CRITICAL: Private keys, mnemonics, wallets — NEVER commit these
+# ----------------------------------------------------------------
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+mnemonic.txt
+mnemonic
+seed.txt
+seed
+private_key*
+privatekey*
+secret*
+wallet.json
+wallet-*.json
+accounts.json
+accounts-*.json
+deployment-keys.json
+.secret
+.mnemonic
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+# Clarinet wallet / secrets
+settings/Mainnet.toml
+settings/Testnet.toml
+settings/Devnet.toml
+clarinet-accounts.toml
+
+# ----------------------------------------------------------------
+# Node / npm / yarn / pnpm
+# ----------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+.yarn/
+!.yarn/releases
+!.yarn/plugins
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ----------------------------------------------------------------
+# Build outputs
+# ----------------------------------------------------------------
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+coverage/
+*.tsbuildinfo
+
+# ----------------------------------------------------------------
+# Environment & config with secrets
+# ----------------------------------------------------------------
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+
+# ----------------------------------------------------------------
+# OS artifacts
+# ----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# ----------------------------------------------------------------
+# IDE / Editor
+# ----------------------------------------------------------------
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.suo
+*.user
+*.sublime-workspace
+
+# ----------------------------------------------------------------
+# Clarinet / Stacks
+# ----------------------------------------------------------------
+.clarinet/
+artifacts/
+deployments/mainnet/
+deployments/testnet/
+
+# ----------------------------------------------------------------
+# Logs & temp
+# ----------------------------------------------------------------
+logs/
+*.log
+tmp/
+temp/
+.tmp/
