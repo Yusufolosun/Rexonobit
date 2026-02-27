@@ -1,0 +1,65 @@
+[project]
+name = "rexonobit"
+authors = []
+telemetry = false
+requirementsFile = "requirements.txt"
+
+[contracts.cooperative-registry]
+path = "contracts/cooperative-registry.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.savings-vault]
+path = "contracts/savings-vault.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.trust-score]
+path = "contracts/trust-score.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.lending-pool]
+path = "contracts/lending-pool.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.labor-market]
+path = "contracts/labor-market.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.treasury]
+path = "contracts/treasury.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.governance]
+path = "contracts/governance.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.rosca]
+path = "contracts/rosca.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.reputation-nft]
+path = "contracts/reputation-nft.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.arbitration]
+path = "contracts/arbitration.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.synthetic-credit]
+path = "contracts/synthetic-credit.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.protocol-config]
+path = "contracts/protocol-config.clar"
+clarity_version = 2
+epoch = "2.4"
