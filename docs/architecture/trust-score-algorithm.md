@@ -56,7 +56,7 @@ Trust tiers gate protocol features and are computed client-side from the raw sco
 
 Each reward type is protected by a cooldown window measured in block heights:
 
-- `savings-points` cooldown: `trust-cooldown-blocks` config param (default **144 blocks** ≈ 24 hours at 10 min/block)
+- `savings-points` cooldown: `savings-reward-cooldown-blocks` config param (default **144 blocks** ≈ 24 hours at 10 min/block)
 - `endorsement-points` cooldown: `endorsement-cooldown-blocks` (default **1008 blocks** ≈ 1 week)
 - `penalty` cooldown: same as savings cooldown
 
