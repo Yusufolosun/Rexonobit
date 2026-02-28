@@ -1,3 +1,8 @@
+/**
+ * @module useTask
+ * @description React hook for REXONOBIT labor-market task data.
+ * Fetches task info for a given task ID from the labor-market contract.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { getTask } from '../lib/read';
 
