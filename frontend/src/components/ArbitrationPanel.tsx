@@ -200,10 +200,12 @@ export default function ArbitrationPanel() {
       </div>
 
       {/* Disputes list */}
-      <h3 style={{ marginBottom: "0.75rem" }}>
-        Disputes ({disputes.length})
-        {loading && <span className="spinner" style={{ marginLeft: "0.5rem" }} />}
-      </h3>
+      <h3 style={{ marginBottom: "0.75rem" }}>Disputes ({disputes.length})</h3>
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
+          {[1, 2].map((i) => <SkeletonCard key={i} lines={4} height="120px" />)}
+        </div>
+      )}
       {!loading && disputes.length === 0 && <p className="text-muted">No disputes.</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {disputes.map((d) => (
