@@ -136,3 +136,66 @@ Clarinet.test({
     assertEquals(receipt.result.startsWith("(ok") || receipt.result.startsWith("(err"), true);
   },
 });
+
+// ---------------------------------------------------------------------------
+// Edge-case tests
+// ---------------------------------------------------------------------------
+
+Clarinet.test({
+  name: "create-rosca: unregistered user cannot create ROSCA",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const outsider = accounts.get("wallet_5")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("X"), types.uint(500_000), types.uint(1008), types.uint(2)], outsider.address),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
+Clarinet.test({
+  name: "join-rosca: member cannot join non-existent ROSCA",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { bob } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(999)], bob.address),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
+Clarinet.test({
+  name: "join-rosca: member cannot join the same ROSCA twice",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Dup"), types.uint(1_000_000), types.uint(1008), types.uint(2)], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
+Clarinet.test({
+  name: "contribute: contribution to non-existent ROSCA returns error",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "contribute", [types.uint(999)], alice.address),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
