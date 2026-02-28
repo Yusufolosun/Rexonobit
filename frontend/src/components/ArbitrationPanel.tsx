@@ -156,6 +156,8 @@ export default function ArbitrationPanel() {
         </div>
         <button
           className="btn-primary"
+          aria-busy={txPending}
+          aria-label="Open dispute"
           disabled={txPending || !respondent || !circleId}
           onClick={() =>
             handle(
@@ -179,6 +181,8 @@ export default function ArbitrationPanel() {
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
           <button
             className="btn-secondary"
+            aria-busy={txPending}
+            aria-label="Join arbitration panel"
             disabled={txPending || !actDisputeId}
             onClick={() => handle(() => joinArbitrationPanel(parseInt(actDisputeId)), "Joined panel")}
           >
@@ -186,6 +190,8 @@ export default function ArbitrationPanel() {
           </button>
           <button
             className="btn-secondary"
+            aria-busy={txPending}
+            aria-label="Close dispute"
             disabled={txPending || !actDisputeId}
             onClick={() => handle(() => closeDispute(parseInt(actDisputeId)), "Dispute closed")}
           >
@@ -212,6 +218,8 @@ export default function ArbitrationPanel() {
           </div>
           <button
             className="btn-primary"
+            aria-busy={txPending}
+            aria-label="Submit verdict"
             disabled={txPending || !actDisputeId}
             onClick={() => handle(() => submitVerdict(parseInt(actDisputeId), parseInt(verdictChoice), verdictReason), "Verdict submitted")}
           >
