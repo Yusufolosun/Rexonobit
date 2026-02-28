@@ -24,10 +24,6 @@ export default function VaultPanel() {
   const [txPending, setTxPending] = useState(false);
   const { success: toastSuccess, error: toastError } = useToast();
 
-  const [depositAmt, setDepositAmt] = useState("");
-  const [lockAmt, setLockAmt] = useState("");
-  const [lockBlocks, setLockBlocks] = useState("2016"); // ~14 days in blocks
-
   const depositField = useFormField("", validateSTX);
   const lockAmtField = useFormField("", validateSTX);
   const lockBlocksField = useFormField("2016", (v) => validateBlockCount(v, 144, 52560, "Lock duration"));
