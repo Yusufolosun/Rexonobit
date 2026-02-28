@@ -62,9 +62,26 @@ submit-delivery() + poster confirms:
   lost bids: no action (no stake required to bid)
 
 dispute-delivery() → arbitration:
+  caller pays arb fee → arbitration.open-dispute()
+  dispute-id stored on task record
   escrow stays locked until ruling
   arbitration ruling releases escrow to winner
 ```
+
+### Dispute Parameters
+
+`dispute-task` now accepts two additional arguments:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `reason`  | `string-utf8 512` | Why the caller is disputing the task |
+| `evidence`| `string-utf8 512` | Supporting evidence (links, hashes, etc.) |
+
+The function determines the respondent automatically: if the poster files
+the dispute the worker becomes the respondent, and vice-versa.  The
+caller pays the arbitration fee (configured via `arbitration-fee-ustx`)
+and the returned `dispute-id` is stored in the task record for
+cross-contract traceability.
 
 ---
 

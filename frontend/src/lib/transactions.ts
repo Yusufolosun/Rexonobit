@@ -303,10 +303,18 @@ export async function attestTask(
   ]);
 }
 
-export async function disputeTask(taskId: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.LABOR_MARKET, "dispute-task", [
-    uintCV(taskId),
-  ]);
+export async function disputeTask(
+  taskId: number,
+  reason: string,
+  evidence: string
+): Promise<{ txid: string }> {
+  // Arbitration fee is charged on-chain; must allow that transfer
+  return callContract(
+    CONTRACT_NAMES.LABOR_MARKET, "dispute-task",
+    [uintCV(taskId), stringUtf8CV(reason), stringUtf8CV(evidence)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
 // Bounty refund amount is determined on-chain; must allow contract transfers
