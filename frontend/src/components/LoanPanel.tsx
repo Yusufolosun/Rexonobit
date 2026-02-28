@@ -1,6 +1,12 @@
 // frontend/src/components/LoanPanel.tsx
 // Circle-backed micro-lending: request loan, repay, liquidate defaulter
 
+/**
+ * LoanPanel — micro-lending interface.
+ * Supports pool funding, loan requests, repayment, and liquidation of
+ * defaulters. Powered by the lending-pool contract.
+ */
+
 import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import { requestLoan, repayLoan, liquidateDefaulter, fundPool } from "../lib/transactions";
