@@ -8,6 +8,7 @@ import { getVaultBalance, getLockedBalance, getStreakStatus, getLockedUntil } fr
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validateBlockCount } from "../lib/validators";
 import { FormInput } from "./FormInput";
+import { useToast } from "../context/ToastContext";
 
 interface VaultState {
   balance: number;
@@ -21,8 +22,7 @@ export default function VaultPanel() {
   const [vault, setVault] = useState<VaultState | null>(null);
   const [loadingData, setLoadingData] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [depositAmt, setDepositAmt] = useState("");
   const [lockAmt, setLockAmt] = useState("");
@@ -54,14 +54,12 @@ export default function VaultPanel() {
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
-    setError(null);
-    setSuccess(null);
     try {
       const res = await fn();
-      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      toastSuccess(`${msg} submitted`, res.txid);
       setTimeout(refresh, 3000);
     } catch (e) {
-      setError(String(e));
+      toastError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -76,8 +74,6 @@ export default function VaultPanel() {
       <h2 className="section-title">Savings Vault</h2>
 
       {loadingData && <div style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" /> Refreshing…</div>}
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
 
       {vault && (
         <div className="grid-3" style={{ marginBottom: "1.5rem" }}>
