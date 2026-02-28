@@ -1,27 +1,19 @@
 // frontend/src/components/VaultPanel.tsx
 // STX savings vault: deposit, lock, withdraw with streak display
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { deposit, lockSavings, withdraw, withdrawLocked } from "../lib/transactions";
-import { getVaultBalance, getLockedBalance, getStreakStatus, getLockedUntil } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validateBlockCount } from "../lib/validators";
 import { FormInput } from "./FormInput";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
-
-interface VaultState {
-  balance: number;
-  locked: number;
-  streak: number;
-  lockedUntil: number;
-}
+import { useVault } from "../hooks/useVault";
 
 export default function VaultPanel() {
   const { address, connected } = useWallet();
-  const [vault, setVault] = useState<VaultState | null>(null);
-  const [loadingData, setLoadingData] = useState(false);
+  const { balance, lockedBalance, lockedUntil, streak, loading: loadingData, refresh } = useVault(address);
   const [txPending, setTxPending] = useState(false);
   const { success: toastSuccess, error: toastError } = useToast();
 
@@ -29,25 +21,6 @@ export default function VaultPanel() {
   const lockAmtField = useFormField("", validateSTX);
   const lockBlocksField = useFormField("2016", (v) => validateBlockCount(v, 144, 52560, "Lock duration"));
 
-  const refresh = useCallback(() => {
-    if (!address) return;
-    setLoadingData(true);
-    Promise.all([
-      getVaultBalance(address).catch(() => 0),
-      getLockedBalance(address).catch(() => 0),
-      getStreakStatus(address).catch(() => 0),
-      getLockedUntil(address).catch(() => 0),
-    ]).then(([balance, locked, streak, lockedUntil]) => {
-      setVault({
-        balance: Number(balance),
-        locked: Number(locked),
-        streak: Number(streak),
-        lockedUntil: Number(lockedUntil),
-      });
-    }).finally(() => setLoadingData(false));
-  }, [address]);
-
-  useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
@@ -73,20 +46,20 @@ export default function VaultPanel() {
 
       {loadingData && <div role="status" aria-live="polite" style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" aria-hidden="true" /> Refreshing…</div>}
 
-      {vault && (
+      {!loadingData && (
         <div className="grid-3" style={{ marginBottom: "1.5rem" }}>
           <div className="card">
             <span className="text-sm text-muted">Available</span>
-            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{stx(vault.balance)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>STX</span></div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{stx(balance)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>STX</span></div>
           </div>
           <div className="card">
             <span className="text-sm text-muted">Locked</span>
-            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{stx(vault.locked)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>STX</span></div>
-            {vault.lockedUntil > 0 && <div className="text-muted" style={{ fontSize: "0.75rem" }}>until block {vault.lockedUntil}</div>}
+            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{stx(lockedBalance)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>STX</span></div>
+            {lockedUntil > 0 && <div className="text-muted" style={{ fontSize: "0.75rem" }}>until block {lockedUntil}</div>}
           </div>
           <div className="card">
             <span className="text-sm text-muted">Deposit Streak</span>
-            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{vault.streak} <span className="text-muted" style={{ fontSize: "0.8rem" }}>cycles</span></div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{streak} <span className="text-muted" style={{ fontSize: "0.8rem" }}>cycles</span></div>
           </div>
         </div>
       )}
