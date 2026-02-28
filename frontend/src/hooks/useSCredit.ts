@@ -1,3 +1,9 @@
+/**
+ * @module useSCredit
+ * @description React hook for sCREDIT synthetic credit line state.
+ * Fetches balance, credit limit, utilization %, trust score, and locked
+ * savings collateral for a given Stacks address.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { getSCreditBalance, getCreditLimit, getTrustScore, getLockedBalance } from '../lib/read';
 
