@@ -12,6 +12,9 @@ import TreasuryPanel from "./components/TreasuryPanel";
 import GovernancePanel from "./components/GovernancePanel";
 import ArbitrationPanel from "./components/ArbitrationPanel";
 import SCreditPanel from "./components/SCreditPanel";
+import MemberProfile from "./components/MemberProfile";
+import BadgeGallery from "./components/BadgeGallery";
+import TxHistory from "./components/TxHistory";
 
 function App() {
   return (
@@ -37,6 +40,12 @@ function App() {
         <ArbitrationPanel />
         <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
         <SCreditPanel />
+        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
+        <MemberProfile />
+        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
+        <BadgeGallery />
+        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
+        <TxHistory />
         <footer style={{ textAlign: "center", padding: "3rem 1.5rem", color: "var(--color-text-muted)", fontSize: "0.82rem" }}>
           REXONOBIT — Bitcoin-Native Micro-Economy Protocol on Stacks · Open Source
         </footer>
