@@ -15,6 +15,7 @@ const ERR_NOT_MEMBER = 800;
 const ERR_NOT_CIRCLE_MEMBER = 802;
 const ERR_PROPOSAL_NOT_FOUND = 810;
 const ERR_BELOW_SUPERMAJORITY = 815;
+const ERR_QUORUM_NOT_MET = 613;
 
 function setup(chain: Chain, accounts: Map<string, Account>) {
   const deployer = accounts.get("deployer")!;
@@ -174,5 +175,60 @@ Clarinet.test({
       Tx.contractCall("treasury", "propose-spend", [types.uint(1), types.principal(recipient.address), types.uint(1_000_000), types.utf8("Stranger spend")], stranger.address),
     ]);
     block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "execute-spend: fails when quorum is not met",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const bob = accounts.get("wallet_2")!;
+    const carol = accounts.get("wallet_3")!;
+    const dave = accounts.get("wallet_4")!;
+
+    // Register 4 members and create an open circle
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], bob.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], carol.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], dave.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "create-circle",
+        [types.utf8("Quorum Test"), types.utf8(""), types.bool(true), types.uint(0)],
+        alice.address
+      ),
+    ]);
+    // Bob, Carol, Dave join (open circle → direct admission)
+    chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "request-join", [types.uint(1)], bob.address),
+      Tx.contractCall("cooperative-registry", "request-join", [types.uint(1)], carol.address),
+      Tx.contractCall("cooperative-registry", "request-join", [types.uint(1)], dave.address),
+    ]);
+
+    // Fund the treasury and create a proposal
+    chain.mineBlock([
+      Tx.contractCall("treasury", "deposit-to-treasury", [types.uint(1), types.uint(10_000_000)], alice.address),
+      Tx.contractCall("treasury", "propose-spend", [
+        types.uint(1), types.principal(bob.address), types.uint(2_000_000), types.utf8("Low quorum test"),
+      ], alice.address),
+    ]);
+
+    // Only alice votes (1 of 4 = 25% participation, below 50% quorum)
+    chain.mineBlock([
+      Tx.contractCall("treasury", "vote", [types.uint(1), types.bool(true)], alice.address),
+    ]);
+
+    // Fast-forward past vote window + timelock
+    chain.mineEmptyBlockUntil(chain.blockHeight + 2000);
+
+    const block = chain.mineBlock([
+      Tx.contractCall("treasury", "execute-spend", [types.uint(1)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr().expectUint(ERR_QUORUM_NOT_MET);
   },
 });

@@ -72,6 +72,21 @@ Governance proposals may not disburse below the reserve floor.
 | 801 | `err-insufficient-balance` | Requested amount exceeds treasury balance |
 | 802 | `err-below-reserve` | Disbursement would breach reserve floor |
 | 803 | `err-over-limit` | Amount exceeds single-disbursement limit |
+| 613 | `ERR-QUORUM-NOT-MET` | Fewer than the required share of circle members voted |
+
+---
+
+## Quorum Requirement
+
+`execute-spend` now enforces a minimum participation threshold before
+evaluating the yes/no ratio.  The `treasury-quorum-bps` parameter
+(default **5000** = 50 %) defines the minimum share of circle members
+that must have voted.  If participation falls below the quorum, execution
+is rejected with `ERR-QUORUM-NOT-MET (u613)` regardless of the approval
+ratio.
+
+This prevents a scenario in which a single "yes" vote achieves 100 %
+approval in a 10-member circle, passing the supermajority check.
 
 ---
 
