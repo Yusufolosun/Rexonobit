@@ -59,8 +59,14 @@ button {
   font-weight: 600;
   padding: 0.55rem 1.1rem;
   transition: background 0.15s, opacity 0.15s;
+  outline: none;
 }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Keyboard-only focus ring — does not show on mouse click */
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
 
 input, textarea, select {
   background: var(--color-surface-2);
