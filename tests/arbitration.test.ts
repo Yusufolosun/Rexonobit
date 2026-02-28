@@ -140,3 +140,91 @@ Clarinet.test({
     assertEquals(receipt.result.startsWith("(ok") || receipt.result.startsWith("(err"), true);
   },
 });
+
+// ---------------------------------------------------------------------------
+// Edge-case tests
+// ---------------------------------------------------------------------------
+
+Clarinet.test({
+  name: "open-dispute: unregistered member cannot open a dispute",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const dave = accounts.get("wallet_4")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "arbitration",
+        "open-dispute",
+        [types.principal(alice.address), types.uint(1), types.utf8("No registry")],
+        dave.address
+      ),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
+Clarinet.test({
+  name: "open-dispute: claimant cannot dispute themselves",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "arbitration",
+        "open-dispute",
+        [types.principal(alice.address), types.uint(1), types.utf8("Self dispute")],
+        alice.address
+      ),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
+Clarinet.test({
+  name: "submit-verdict: verdict on missing dispute returns error",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "arbitration",
+        "submit-verdict",
+        [types.uint(999), types.uint(1), types.utf8("No such dispute")],
+        alice.address
+      ),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
+Clarinet.test({
+  name: "join-panel: non-member cannot join panel",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const bob = accounts.get("wallet_2")!;
+    const outsider = accounts.get("wallet_5")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], bob.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "create-circle", [types.utf8("B"), types.utf8(""), types.uint(0), types.uint(20)], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("arbitration", "open-dispute", [types.principal(bob.address), types.uint(1), types.utf8("Dispute")], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("arbitration", "join-panel", [types.uint(1)], outsider.address),
+    ]);
+    const receipt = block.receipts[0];
+    assertEquals(receipt.result.startsWith("(err"), true);
+  },
+});
+
