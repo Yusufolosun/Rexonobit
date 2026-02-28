@@ -199,3 +199,68 @@ Clarinet.test({
   },
 });
 
+Clarinet.test({
+  name: "set-payout-order: rejects list with duplicate addresses",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob, carol } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Dup Test"), types.uint(1_000_000), types.uint(3), types.uint(4320)], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], carol.address),
+    ]);
+    // Try to set payout order with alice listed twice
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "rosca",
+        "set-payout-order",
+        [
+          types.uint(1),
+          types.list([
+            types.principal(alice.address),
+            types.principal(alice.address),
+            types.principal(bob.address),
+          ]),
+        ],
+        alice.address
+      ),
+    ]);
+    // Should fail with ERR-DUPLICATE-ENTRY (u815)
+    block.receipts[0].result.expectErr().expectUint(815);
+  },
+});
+
+Clarinet.test({
+  name: "set-payout-order: rejects list with non-member principal",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob, carol } = setup(chain, accounts);
+    const outsider = accounts.get("wallet_5")!;
+    chain.mineBlock([
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Bad Order"), types.uint(1_000_000), types.uint(3), types.uint(4320)], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], carol.address),
+    ]);
+    // Include an outsider who never joined
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "rosca",
+        "set-payout-order",
+        [
+          types.uint(1),
+          types.list([
+            types.principal(alice.address),
+            types.principal(bob.address),
+            types.principal(outsider.address),
+          ]),
+        ],
+        alice.address
+      ),
+    ]);
+    // Should fail with ERR-NOT-IN-ROSCA (u805)
+    block.receipts[0].result.expectErr().expectUint(805);
+  },
+});
+
