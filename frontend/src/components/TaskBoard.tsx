@@ -18,6 +18,7 @@ import { validateSTX, validatePositiveInt, validateTaskTitle, validateTaskDescri
 import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonRow } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface Task {
   id: number;
@@ -73,6 +74,7 @@ export default function TaskBoard() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
