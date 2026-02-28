@@ -132,3 +132,44 @@ Clarinet.test({
     result.result.expectUint(0);
   },
 });
+
+Clarinet.test({
+  name: "mint: minting zero credit is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(0)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "burn: burning more than balance is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("synthetic-credit", "burn-scredit", [types.uint(1_000_000)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "transfer: transferring to self is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(100_000)], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "synthetic-credit",
+        "transfer-scredit",
+        [types.uint(50_000), types.principal(alice.address)],
+        alice.address
+      ),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
