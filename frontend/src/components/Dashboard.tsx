@@ -13,6 +13,7 @@ import {
   getTotalCircles,
   isMember,
 } from "../lib/read";
+import { SkeletonCard } from "./SkeletonCard";
 
 interface Stats {
   trustScore: number;
@@ -92,7 +93,11 @@ export default function Dashboard() {
     <section id="dashboard" className="page-container">
       <h2 className="section-title">Dashboard</h2>
 
-      {loading && <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}><span className="spinner" /> Loading on-chain data…</div>}
+      {loading && (
+        <div className="grid-3" style={{ marginBottom: "1.5rem" }}>
+          {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} lines={1} height="80px" />)}
+        </div>
+      )}
       {error && <div className="alert alert-error">{error}</div>}
 
       {stats && (
