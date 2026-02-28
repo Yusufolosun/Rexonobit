@@ -144,6 +144,8 @@ export default function TaskBoard() {
         </div>
         <button
           className="btn-primary"
+          aria-busy={txPending}
+          aria-label="Post new task"
           disabled={txPending || !taskTitle || !taskBounty}
           onClick={() =>
             handle(
@@ -174,31 +176,31 @@ export default function TaskBoard() {
           </div>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button className="btn-secondary" disabled={txPending || !taskId || !bidAmt}
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Bid on task" disabled={txPending || !taskId || !bidAmt}
             onClick={() => handle(() => bidTask(parseInt(taskId), Math.floor(parseFloat(bidAmt) * 1_000_000)), "Bid submitted")}>
             Bid
           </button>
-          <button className="btn-secondary" disabled={txPending || !taskId || !workerAddr}
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Accept bid from worker" disabled={txPending || !taskId || !workerAddr}
             onClick={() => handle(() => acceptBid(parseInt(taskId), workerAddr), "Bid accepted")}>
             Accept Bid
           </button>
-          <button className="btn-primary" disabled={txPending || !taskId}
+          <button className="btn-primary" aria-busy={txPending} aria-label="Submit task completion" disabled={txPending || !taskId}
             onClick={() => handle(() => submitCompletion(parseInt(taskId)), "Completion submitted")}>
             Submit Completion
           </button>
-          <button className="btn-primary" disabled={txPending || !taskId}
+          <button className="btn-primary" aria-busy={txPending} aria-label="Attest task complete" disabled={txPending || !taskId}
             onClick={() => handle(() => attestTask(parseInt(taskId), true), "Attested ✓")}>
             Attest ✓
           </button>
-          <button className="btn-secondary" disabled={txPending || !taskId}
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Reject task completion" disabled={txPending || !taskId}
             onClick={() => handle(() => attestTask(parseInt(taskId), false), "Attest rejected")}>
             Reject
           </button>
-          <button className="btn-secondary" disabled={txPending || !taskId}
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Open dispute on task" disabled={txPending || !taskId}
             onClick={() => handle(() => disputeTask(parseInt(taskId)), "Dispute opened")}>
             Open Dispute
           </button>
-          <button className="btn-secondary" disabled={txPending || !taskId}
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Cancel task" disabled={txPending || !taskId}
             onClick={() => handle(() => cancelTask(parseInt(taskId)), "Task cancelled")}>
             Cancel
           </button>
