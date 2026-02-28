@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getRosca } from '../lib/read';
+import type { RoscaStatus } from '../lib/types';
 
 export interface RoscaData {
   id: number;
