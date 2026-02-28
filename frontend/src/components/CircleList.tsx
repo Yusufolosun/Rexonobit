@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import CircleCard, { Circle } from "./CircleCard";
+import { SkeletonCard } from "./SkeletonCard";
 import {
   registerMember,
   createCircle,
@@ -170,7 +171,11 @@ export default function CircleList() {
 
       {/* Circle grid */}
       <h3 style={{ marginBottom: "1rem" }}>All Circles ({circles.length})</h3>
-      {loading && <div style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" /> Loading circles…</div>}
+      {loading && (
+        <div className="grid-3">
+          {[1,2,3].map(i => <SkeletonCard key={i} lines={4} height="140px" />)}
+        </div>
+      )}
       {!loading && circles.length === 0 && (
         <p className="text-muted">No circles found. Be the first to create one.</p>
       )}
