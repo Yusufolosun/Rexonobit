@@ -18,6 +18,7 @@
 (define-constant ERR-NOT-IN-CIRCLE       (err u610))
 (define-constant ERR-PROPOSAL-EXECUTED   (err u611))
 (define-constant ERR-CIRCLE-NOT-FOUND    (err u612))
+(define-constant ERR-QUORUM-NOT-MET      (err u613))
 
 ;; ─── Contract references ─────────────────────────────────────────────────────
 (define-constant REGISTRY     .cooperative-registry)
@@ -175,19 +176,30 @@
     (treasury  (unwrap! (map-get? treasury-balances
                   { circle-id: (get circle-id proposal) })
                 ERR-CIRCLE-NOT-FOUND))
+    (circle    (unwrap! (contract-call? REGISTRY get-circle (get circle-id proposal))
+                ERR-CIRCLE-NOT-FOUND))
     (supermaj  (default-to u6700
                  (match (contract-call? PROTOCOL-CFG get-param "governance-supermajority-bps")
                    v (some v) none)))
+    ;; Quorum: at least 50 % of circle members must have voted (default)
+    (quorum-bps (default-to u5000
+                  (match (contract-call? PROTOCOL-CFG get-param "treasury-quorum-bps")
+                    v (some v) none)))
     (total-v   (get total-voters proposal))
     (yes-v     (get yes-votes proposal))
+    (member-ct (get member-count circle))
     ;; Yes-vote ratio in basis points
     (yes-bps   (if (> total-v u0) (/ (* yes-v u10000) total-v) u0))
+    ;; Participation ratio in basis points
+    (participation-bps (if (> member-ct u0) (/ (* total-v u10000) member-ct) u0))
   )
     (asserts! (not (is-protocol-paused))              ERR-PROTOCOL-PAUSED)
     (asserts! (or (is-eq (get status proposal) u1) (is-eq (get status proposal) u2))
               ERR-PROPOSAL-EXECUTED)
     (asserts! (> block-height (get vote-until proposal))  ERR-VOTE-CLOSED)
     (asserts! (>= block-height (get execute-after proposal)) ERR-TIMELOCK-ACTIVE)
+    ;; Enough members must have participated before we trust the vote ratio
+    (asserts! (>= participation-bps quorum-bps)           ERR-QUORUM-NOT-MET)
     (asserts! (>= yes-bps supermaj)                       ERR-INSUFFICIENT-VOTES)
     (asserts! (<= (get amount proposal) (get balance treasury)) ERR-INSUFFICIENT-FUNDS)
     (try! (as-contract
