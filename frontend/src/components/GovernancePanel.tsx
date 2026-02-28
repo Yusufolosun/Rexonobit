@@ -104,8 +104,8 @@ export default function GovernancePanel() {
   };
 
   return (
-    <section id="governance" className="page-container">
-      <h2 className="section-title">Governance</h2>
+    <section id="governance" className="page-container" aria-labelledby="governance-title">
+      <h2 id="governance-title" className="section-title">Governance</h2>
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         Trust-weighted voting. Each member's vote weight equals their trust score, capped at 20% of total weight.
       </p>
