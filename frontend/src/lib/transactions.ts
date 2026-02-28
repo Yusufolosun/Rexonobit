@@ -1,6 +1,15 @@
 // frontend/src/lib/transactions.ts
 // Transaction builders for every contract using @stacks/transactions
 
+/**
+ * @module transactions
+ * @description `openContractCall` wrappers for all 12 REXONOBIT contracts.
+ * Each function constructs the appropriate Clarity arguments, invokes a
+ * Hiro Wallet signing flow via `@stacks/connect`, and returns the resulting
+ * `{ txid }` on success. Never broadcasts a transaction without explicit
+ * user approval in the wallet extension.
+ */
+
 import {
   makeContractCall,
   broadcastTransaction,
