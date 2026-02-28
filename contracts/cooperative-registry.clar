@@ -23,6 +23,7 @@
 
 ;; ─── Protocol config reference ───────────────────────────────────────────────
 (define-constant PROTOCOL-CONFIG .protocol-config)
+(define-constant GOVERNANCE      .governance)
 
 ;; ─── Member status values ────────────────────────────────────────────────────
 (define-constant STATUS-ACTIVE    u1)
@@ -225,15 +226,19 @@
   )
 )
 
-;; ─── Expel a member (circle admin only) ──────────────────────────────────────
+;; ─── Expel a member (circle admin or governance contract) ────────────────────
 (define-public (expel-member (circle-id uint) (target principal))
   (let (
     (caller      tx-sender)
-    (caller-role (unwrap! (map-get? circle-members { circle-id: circle-id, member: caller })
-                  ERR-NOT-IN-CIRCLE))
     (circle      (unwrap! (map-get? circles { id: circle-id }) ERR-CIRCLE-NOT-FOUND))
+    (is-governance (is-eq caller GOVERNANCE))
   )
-    (asserts! (is-eq (get role caller-role) u2) ERR-NOT-AUTHORIZED)
+    ;; Allow either the governance contract or a circle admin (role u2)
+    (asserts! (or is-governance
+                  (match (map-get? circle-members { circle-id: circle-id, member: caller })
+                    role-entry (is-eq (get role role-entry) u2)
+                    false))
+              ERR-NOT-AUTHORIZED)
     (asserts! (is-some (map-get? circle-members { circle-id: circle-id, member: target }))
               ERR-NOT-IN-CIRCLE)
     (map-delete circle-members { circle-id: circle-id, member: target })
