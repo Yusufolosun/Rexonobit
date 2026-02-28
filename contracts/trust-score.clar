@@ -136,9 +136,16 @@
 
 ;; ─── Reward: loan repayment ──────────────────────────────────────────────────
 (define-public (reward-loan-repay (member principal) (points uint))
-  (let ((entry (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND)))
+  (let (
+    (entry    (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND))
+    (cooldown (default-to u144
+                (match (contract-call? PROTOCOL-CFG get-param "loan-reward-cooldown-blocks")
+                  v (some v) none)))
+    (since    (- block-height (get last-loan-reward entry)))
+  )
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (asserts! (> points u0)                    ERR-INVALID-AMOUNT)
+    (asserts! (>= since cooldown)              ERR-COOLDOWN-ACTIVE)
     (let ((new-score (add-to-score (get score entry) points (get-max-score))))
       (map-set trust-scores { member: member }
         (merge entry
@@ -177,9 +184,16 @@
 
 ;; ─── Reward: labor task completion ───────────────────────────────────────────
 (define-public (reward-labor (member principal) (points uint))
-  (let ((entry (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND)))
+  (let (
+    (entry    (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND))
+    (cooldown (default-to u144
+                (match (contract-call? PROTOCOL-CFG get-param "labor-reward-cooldown-blocks")
+                  v (some v) none)))
+    (since    (- block-height (get last-labor-reward entry)))
+  )
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (asserts! (> points u0)                    ERR-INVALID-AMOUNT)
+    (asserts! (>= since cooldown)              ERR-COOLDOWN-ACTIVE)
     (let ((new-score (add-to-score (get score entry) points (get-max-score))))
       (map-set trust-scores { member: member }
         (merge entry

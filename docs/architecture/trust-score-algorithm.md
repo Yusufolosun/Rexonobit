@@ -19,9 +19,9 @@ $$
 | Component          | Contract Function            | Caller Contract    | Cooldown (default)   |
 | ------------------ | ---------------------------- | ------------------ | -------------------- |
 | Savings deposit    | `reward-savings`             | `savings-vault`    | 144 blocks (~1 day)  |
-| Loan repayment     | `reward-loan-repay`          | `lending-pool`     | no explicit cooldown |
+| Loan repayment     | `reward-loan-repay`          | `lending-pool`     | 144 blocks (~1 day)  |
 | Circle endorsement | `reward-endorsement`         | `cooperative-registry` | 1008 blocks (~1 wk) |
-| Labor completion   | `reward-labor`               | `labor-market`     | no explicit cooldown |
+| Labor completion   | `reward-labor`               | `labor-market`     | 144 blocks (~1 day)  |
 | Penalty            | `apply-penalty`              | any authorized writer | 144 blocks       |
 
 ---
