@@ -13,6 +13,7 @@ import { getGovernanceProposal } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateRequired, validateMaxLength, validatePositiveInt } from "../lib/validators";
 import { SkeletonCard } from "./SkeletonCard";
+import { useToast } from "../context/ToastContext";
 
 interface GovProposal {
   id: number;
@@ -41,8 +42,7 @@ export default function GovernancePanel() {
   const [proposals, setProposals] = useState<GovProposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // Propose form with validation
   const [propType, setPropType] = useState("PARAM-CHANGE");
@@ -74,14 +74,12 @@ export default function GovernancePanel() {
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
-    setError(null);
-    setSuccess(null);
     try {
       const res = await fn();
-      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      toastSuccess(msg, res.txid);
       setTimeout(refresh, 4000);
     } catch (e) {
-      setError(String(e));
+      toastError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -112,10 +110,7 @@ export default function GovernancePanel() {
         Trust-weighted voting. Each member's vote weight equals their trust score, capped at 20% of total weight.
       </p>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
-      {/* Create Proposal */}
+      {/* Create Proposal */}}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginBottom: "1rem" }}>Create Proposal</h3>
         <div className="grid-2">
