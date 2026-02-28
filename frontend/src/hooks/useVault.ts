@@ -5,6 +5,7 @@ import {
   getLockedUntil,
   getStreakStatus,
 } from '../lib/read';
+import type { VaultData } from '../lib/types';
 
 /**
  * @module useVault
@@ -14,12 +15,8 @@ import {
  * or focus-triggered data invalidation.
  */
 
-export interface VaultState {
-  balance: number;
-  lockedBalance: number;
-  lockedUntil: number;
-  /** Streak count in saved cycles (0 if no active streak) */
-  streak: number;
+/** Extends canonical VaultData with hook-managed loading/error state. */
+export interface VaultState extends VaultData {
   loading: boolean;
   error: string | null;
   refresh: () => void;
