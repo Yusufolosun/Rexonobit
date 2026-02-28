@@ -1,7 +1,7 @@
 # REXONOBIT Makefile
 # Usage: make <target>
 
-.PHONY: dev build lint typecheck test test-integration ci size-check deploy-testnet deploy-mainnet devnet-start clean help
+.PHONY: dev build lint typecheck test test-integration ci size-check stacks-info open-docs deploy-testnet deploy-mainnet devnet-start clean help
 
 help: ## Show this help message
 	@echo "REXONOBIT — Stacks Micro-Economy Protocol"
@@ -75,3 +75,12 @@ clean: ## Remove build artifacts
 
 clean-all: ## Remove build artifacts AND node_modules
 	rm -rf frontend/dist frontend/node_modules coverage/
+
+stacks-info: ## Print current Stacks network and Hiro API URL
+	@echo "Network : $${STACKS_NETWORK:-testnet}"
+	@echo "API URL : $${STACKS_API_URL:-https://stacks-node-api.testnet.co}"
+	@echo "Explorer: https://explorer.hiro.so?chain=$${STACKS_NETWORK:-testnet}"
+
+open-docs: ## Open docs/README in the default browser
+	@echo "Opening docs/README.md ..."
+	@start docs/README.md 2>/dev/null || xdg-open docs/README.md 2>/dev/null || open docs/README.md
