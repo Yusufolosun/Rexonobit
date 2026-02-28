@@ -62,7 +62,7 @@ export const ProtocolStats: React.FC = () => {
         poolBalance: microstxToStx(pool ?? 0),
         treasuryBalance: microstxToStx(treasury ?? 0),
       });
-    } catch (e) {
+    } catch {
       setError("Failed to load protocol statistics.");
     } finally {
       setLoading(false);
@@ -72,7 +72,7 @@ export const ProtocolStats: React.FC = () => {
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
 
-  const cards = [
+  const cards: Array<{ label: string; value: string | number; sub?: string }> = [
     { label: "Total Members", value: stats.totalMembers },
     { label: "Active Circles", value: stats.totalCircles },
     { label: "Lending Pool", value: `${stats.poolBalance.toLocaleString()} STX`, sub: "locked collateral" },
@@ -102,7 +102,7 @@ export const ProtocolStats: React.FC = () => {
         }}
       >
         {cards.map((c) => (
-          <StatCard key={c.label} label={c.label} value={c.value} sub={(c as any).sub} />
+          <StatCard key={c.label} label={c.label} value={c.value} sub={c.sub} />
         ))}
       </div>
     </section>

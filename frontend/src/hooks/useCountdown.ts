@@ -34,7 +34,7 @@ export function useCountdown(
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useEffect(() => { onCompleteRef.current = onComplete; });
 
   const stop = useCallback(() => {
     if (intervalRef.current != null) {

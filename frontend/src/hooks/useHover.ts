@@ -1,12 +1,6 @@
-import { useState, useRef, useCallback, RefObject } from "react";
+import { useState, useRef, useCallback } from "react";
 import type React from "react";
-
-interface HoverState {
-  /** Whether the element is currently hovered */
-  isHovered: boolean;
-  /** Ref to attach to the target element */
-  ref: RefObject<HTMLElement>;
-}
+import type { RefObject } from "react";
 
 /**
  * useHover

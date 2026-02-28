@@ -1,7 +1,7 @@
 // frontend/src/hooks/usePrevious.ts
 // Returns the value of a variable from the previous render cycle
 
-import { useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * Returns the value of `value` from the previous render.
@@ -21,11 +21,11 @@ import { useRef, useEffect } from "react";
  * }, [balance, prevBalance]);
  */
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T | undefined>(undefined);
+  const [prev, setPrev] = useState<T | undefined>(undefined);
 
   useEffect(() => {
-    ref.current = value;
+    setPrev(value);
   }, [value]);
 
-  return ref.current;
+  return prev;
 }

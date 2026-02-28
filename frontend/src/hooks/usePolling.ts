@@ -102,9 +102,13 @@ export function usePolling(
 
   // Sync with `enabled` prop changes after initial mount.
   const didMount = useRef(false);
+  const prevEnabled = useRef(enabled);
   useEffect(() => {
-    if (!didMount.current) { didMount.current = true; return; }
-    if (enabled) { start(); } else { stop(); }
+    if (!didMount.current) { didMount.current = true; prevEnabled.current = enabled; return; }
+    if (enabled !== prevEnabled.current) {
+      prevEnabled.current = enabled;
+      if (enabled) { queueMicrotask(start); } else { queueMicrotask(stop); }
+    }
   }, [enabled, start, stop]);
 
   return { isPolling, start, stop, toggle, runNow };

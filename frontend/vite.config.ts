@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -8,6 +9,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+      },
+    },
     // Supply compile-time constants (safe defaults when env var is absent)
     define: {
       __STACKS_NETWORK__: JSON.stringify(env.VITE_STACKS_NETWORK ?? 'testnet'),

@@ -1,4 +1,3 @@
-import React from "react";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 interface ConnectionStatusProps {

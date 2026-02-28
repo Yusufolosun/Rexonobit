@@ -105,6 +105,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 // ---------------------------------------------------------------------------
 
 /** Access the notifications context. Must be used inside <NotificationsProvider>. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNotifications(): NotificationsContextType {
   return useContext(NotificationsContext);
 }

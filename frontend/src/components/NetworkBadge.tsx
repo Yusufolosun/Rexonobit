@@ -1,5 +1,3 @@
-import React from "react";
-
 export type NetworkMode = "mainnet" | "testnet" | "devnet" | "mocknet";
 
 interface NetworkBadgeProps {

@@ -1,5 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 
+interface NetworkConnection extends EventTarget {
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+}
+
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkConnection;
+  mozConnection?: NetworkConnection;
+  webkitConnection?: NetworkConnection;
+}
+
 interface NetworkStatus {
   /** Whether the browser has network connectivity */
   isOnline: boolean;
@@ -25,8 +37,8 @@ interface NetworkStatus {
  * if (!isOnline) return <Offline />;
  */
 export function useNetworkStatus(): NetworkStatus {
-  const getConnection = () => {
-    const nav = navigator as any;
+  const getConnection = (): NetworkConnection | null => {
+    const nav = navigator as NavigatorWithConnection;
     return nav.connection ?? nav.mozConnection ?? nav.webkitConnection ?? null;
   };
 

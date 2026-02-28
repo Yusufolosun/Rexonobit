@@ -64,7 +64,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (userSession.isSignInPending()) {
       userSession.handlePendingSignIn().then(() => refresh());
     } else {
-      refresh();
+      // Use a microtask to avoid synchronous setState in the effect body
+      queueMicrotask(refresh);
     }
   }, [refresh]);
 
@@ -91,6 +92,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useWallet(): WalletContextType {
   return useContext(WalletContext);
 }

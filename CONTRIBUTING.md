@@ -29,8 +29,8 @@ Thank you for your interest in contributing to REXONOBIT — a Bitcoin-native mi
 ### Clone and install
 
 ```bash
-git clone https://github.com/<your-org>/rexonobit.git
-cd rexonobit
+git clone https://github.com/Yusufolosun/Rexonobit.git
+cd Rexonobit
 cd frontend && npm install
 ```
 
@@ -179,8 +179,15 @@ perf(frontend): memo-ize filtered transactions in TxHistory
 
 ## Pull Request Process
 
-1. Ensure all tests pass: `clarinet test`
-2. Ensure the frontend builds: `cd frontend && npm run build`
-3. Fill out the PR template
-4. Request review from at least one maintainer
-5. PRs are squash-merged into `main`
+1. Ensure contracts pass validation: `make check`
+2. Ensure all tests pass: `make test`
+3. Ensure the frontend compiles and lints cleanly:
+   ```bash
+   make typecheck
+   make lint
+   make build
+   ```
+4. Or run the full CI pipeline locally: `make ci`
+5. Fill out the PR template
+6. Request review from at least one maintainer
+7. PRs are squash-merged into `main`

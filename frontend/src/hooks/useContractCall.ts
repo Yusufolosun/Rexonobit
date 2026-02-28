@@ -1,10 +1,4 @@
 import { useState, useCallback } from "react";
-import {
-  makeContractCall,
-  broadcastTransaction,
-  type ContractCallOptions,
-  type StacksTransaction,
-} from "@stacks/transactions";
 import { openContractCall } from "@stacks/connect";
 import type { ContractCallRegularOptions } from "@stacks/connect";
 

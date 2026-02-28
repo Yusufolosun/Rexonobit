@@ -56,7 +56,7 @@ export function useKeyboardShortcut(
 
   // Keep a stable ref to the callback so we avoid re-registering on every render
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+  useEffect(() => { callbackRef.current = callback; });
 
   useEffect(() => {
     if (disabled) return;

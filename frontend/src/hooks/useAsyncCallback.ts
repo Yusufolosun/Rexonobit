@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 // ---------------------------------------------------------------------------
 // useAsyncCallback — wrap any async function with loading/error tracking
@@ -31,7 +31,7 @@ export function useAsyncCallback<Args extends unknown[], R>(
 
   // Track mount state for cleanup safety
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+  useEffect(() => { fnRef.current = fn; });
 
   const execute = useCallback(
     async (...args: Args): Promise<R | undefined> => {

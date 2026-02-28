@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, RefObject } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { RefObject } from "react";
 
 interface IntersectionOptions extends IntersectionObserverInit {
   /** Freeze the observed state once the element becomes visible. Default false. */
@@ -11,7 +12,7 @@ interface IntersectionResult {
   /** Whether the element is currently intersecting the viewport/root */
   isIntersecting: boolean;
   /** Ref to attach to the target element */
-  ref: RefObject<HTMLElement>;
+  ref: RefObject<HTMLElement | null>;
 }
 
 /**

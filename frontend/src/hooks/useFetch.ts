@@ -33,13 +33,16 @@ export function useFetch<T = unknown>(
   const [trigger, setTrigger] = useState(0);
 
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => { optionsRef.current = options; });
 
   useEffect(() => {
     if (!url) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
+    // Defer state updates to avoid synchronous setState in effect body
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     fetch(url, { ...optionsRef.current, signal: controller.signal })
       .then((res) => {

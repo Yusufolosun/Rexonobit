@@ -77,6 +77,11 @@ export function TxHistory() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  const filtered = useMemo(
+    () => filter === 'all' ? txs : txs.filter(t => t.status === filter),
+    [txs, filter]
+  );
+
   if (!connected || !address) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
@@ -84,11 +89,6 @@ export function TxHistory() {
       </div>
     );
   }
-
-  const filtered = useMemo(
-    () => filter === 'all' ? txs : txs.filter(t => t.status === filter),
-    [txs, filter]
-  );
 
   return (
     <div className="card">

@@ -12,10 +12,10 @@ import TreasuryPanel from "./components/TreasuryPanel";
 import GovernancePanel from "./components/GovernancePanel";
 import ArbitrationPanel from "./components/ArbitrationPanel";
 import SCreditPanel from "./components/SCreditPanel";
-import MemberProfile from "./components/MemberProfile";
-import BadgeGallery from "./components/BadgeGallery";
-import TxHistory from "./components/TxHistory";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { MemberProfile } from "./components/MemberProfile";
+import { BadgeGallery } from "./components/BadgeGallery";
+import { TxHistory } from "./components/TxHistory";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProtocolStats } from "./components/ProtocolStats";
 
 const divider = <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />;

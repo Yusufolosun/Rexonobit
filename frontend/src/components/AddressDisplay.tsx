@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import CopyButton from "@/components/CopyButton";
 import TooltipWrapper from "@/components/TooltipWrapper";
 import { truncateAddress } from "@/lib/format";

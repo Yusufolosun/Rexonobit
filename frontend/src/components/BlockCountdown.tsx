@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { blocksToHuman, blockHeightToEta, blocksUntil, isPast } from "@/lib/datetime";
 
 interface BlockCountdownProps {

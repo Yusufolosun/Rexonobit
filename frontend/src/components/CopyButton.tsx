@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import type React from "react";
+import { useEffect } from "react";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import { useTimeout } from "@/hooks/useTimeout";
 
@@ -35,7 +36,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   className = "",
   ariaLabel,
 }) => {
-  const { copy, copied } = useCopyToClipboard();
+  const { copyToClipboard, copied } = useCopyToClipboard();
   const { set: startReset } = useTimeout(() => {}, resetAfter);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   }, [copied, startReset]);
 
   const handleClick = () => {
-    void copy(value);
+    void copyToClipboard(value);
   };
 
   return (

@@ -43,12 +43,12 @@ export function useStepWizard({
 }: UseStepWizardOptions): UseStepWizardReturn {
   if (totalSteps < 1) throw new RangeError("useStepWizard: totalSteps must be ≥ 1");
 
-  const clamp = (n: number) => Math.min(Math.max(n, 1), totalSteps);
+  const clamp = useCallback((n: number) => Math.min(Math.max(n, 1), totalSteps), [totalSteps]);
 
-  const [step, setStep] = useState<number>(clamp(initialStep));
+  const [step, setStep] = useState<number>(() => clamp(initialStep));
 
-  const next = useCallback(() => setStep((s) => clamp(s + 1)), [totalSteps]);
-  const back = useCallback(() => setStep((s) => clamp(s - 1)), []);
+  const next = useCallback(() => setStep((s) => clamp(s + 1)), [clamp]);
+  const back = useCallback(() => setStep((s) => clamp(s - 1)), [clamp]);
   const goTo = useCallback(
     (target: number) => {
       if (target < 1 || target > totalSteps) {
@@ -58,7 +58,7 @@ export function useStepWizard({
     },
     [totalSteps]
   );
-  const reset = useCallback(() => setStep(clamp(initialStep)), [initialStep, totalSteps]);
+  const reset = useCallback(() => setStep(clamp(initialStep)), [clamp, initialStep]);
 
   return {
     step,
