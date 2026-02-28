@@ -20,6 +20,7 @@
 (define-constant ERR-PROTOCOL-PAUSED      (err u113))
 (define-constant ERR-INVALID-NAME         (err u114))
 (define-constant ERR-CIRCLE-INACTIVE      (err u115))
+(define-constant ERR-NOT-SUSPENDED        (err u116))
 
 ;; ─── Protocol config reference ───────────────────────────────────────────────
 (define-constant PROTOCOL-CONFIG .protocol-config)
@@ -269,6 +270,21 @@
           (map-set members { address: target } (merge m { status: STATUS-SUSPENDED }))
           (ok true))
       ERR-NOT-A-MEMBER
+    )
+  )
+)
+
+;; ─── Reinstate a suspended member (protocol admin) ──────────────────────────
+(define-public (reinstate-member (target principal))
+  (begin
+    (asserts! (is-eq tx-sender
+      (unwrap! (contract-call? PROTOCOL-CONFIG get-admin) ERR-NOT-AUTHORIZED))
+      ERR-NOT-AUTHORIZED)
+    (let ((member (unwrap! (map-get? members { address: target }) ERR-NOT-A-MEMBER)))
+      (asserts! (is-eq (get status member) STATUS-SUSPENDED) ERR-NOT-SUSPENDED)
+      (map-set members { address: target }
+        (merge member { status: STATUS-ACTIVE }))
+      (ok true)
     )
   )
 )

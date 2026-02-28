@@ -297,3 +297,112 @@ Clarinet.test({
     activeCheck.result.expectBool(true);
   },
 });
+
+// ---------------------------------------------------------------------------
+// reinstate-member
+// ---------------------------------------------------------------------------
+Clarinet.test({
+  name: "reinstate-member: admin can restore a suspended member to active",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+
+    // Suspend Alice
+    chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "suspend-member",
+        [types.principal(alice.address)],
+        deployer.address
+      ),
+    ]);
+
+    // Confirm she is not active
+    const suspendedCheck = chain.callReadOnlyFn(
+      "cooperative-registry",
+      "is-active-member",
+      [types.principal(alice.address)],
+      deployer.address
+    );
+    suspendedCheck.result.expectBool(false);
+
+    // Reinstate her
+    const reinstateBlock = chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "reinstate-member",
+        [types.principal(alice.address)],
+        deployer.address
+      ),
+    ]);
+    reinstateBlock.receipts[0].result.expectOk().expectBool(true);
+
+    // Confirm she is active again
+    const activeCheck = chain.callReadOnlyFn(
+      "cooperative-registry",
+      "is-active-member",
+      [types.principal(alice.address)],
+      deployer.address
+    );
+    activeCheck.result.expectBool(true);
+  },
+});
+
+Clarinet.test({
+  name: "reinstate-member: non-admin caller is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const bob = accounts.get("wallet_2")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "suspend-member",
+        [types.principal(alice.address)],
+        deployer.address
+      ),
+    ]);
+
+    // Bob (not admin) tries to reinstate — should fail
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "reinstate-member",
+        [types.principal(alice.address)],
+        bob.address
+      ),
+    ]);
+    block.receipts[0].result.expectErr().expectUint(100);
+  },
+});
+
+Clarinet.test({
+  name: "reinstate-member: cannot reinstate an active (non-suspended) member",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+
+    // Try to reinstate an already-active member
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "reinstate-member",
+        [types.principal(alice.address)],
+        deployer.address
+      ),
+    ]);
+    block.receipts[0].result.expectErr().expectUint(116);
+  },
+});
