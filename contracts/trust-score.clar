@@ -115,7 +115,7 @@
   (let (
     (entry      (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND))
     (cooldown   (default-to u144
-                  (match (contract-call? PROTOCOL-CFG get-param "endorsement-cooldown-blocks")
+                  (match (contract-call? PROTOCOL-CFG get-param "savings-reward-cooldown-blocks")
                     v (some v) none)))
     (since-last (- block-height (get last-savings-reward entry)))
   )
