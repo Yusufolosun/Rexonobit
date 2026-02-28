@@ -247,3 +247,143 @@ Clarinet.test({
     second.receipts[0].result.expectOk();
   },
 });
+
+// ---------------------------------------------------------------------------
+// reward-loan-repay cooldown enforcement
+// ---------------------------------------------------------------------------
+Clarinet.test({
+  name: "reward-loan-repay: second call within cooldown is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+
+    // First loan-repay reward succeeds
+    const first = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-loan-repay",
+        [types.principal(alice.address), types.uint(10)],
+        deployer.address
+      ),
+    ]);
+    first.receipts[0].result.expectOk();
+
+    // Immediate second call should be rejected (cooldown not elapsed)
+    const second = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-loan-repay",
+        [types.principal(alice.address), types.uint(10)],
+        deployer.address
+      ),
+    ]);
+    second.receipts[0].result.expectErr().expectUint(303);
+  },
+});
+
+Clarinet.test({
+  name: "reward-loan-repay: succeeds after cooldown elapses",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+
+    chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-loan-repay",
+        [types.principal(alice.address), types.uint(10)],
+        deployer.address
+      ),
+    ]);
+
+    // Advance past the default 144-block cooldown
+    chain.mineEmptyBlockUntil(chain.blockHeight + 150);
+
+    const second = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-loan-repay",
+        [types.principal(alice.address), types.uint(10)],
+        deployer.address
+      ),
+    ]);
+    second.receipts[0].result.expectOk();
+  },
+});
+
+// ---------------------------------------------------------------------------
+// reward-labor cooldown enforcement
+// ---------------------------------------------------------------------------
+Clarinet.test({
+  name: "reward-labor: second call within cooldown is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+
+    const first = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-labor",
+        [types.principal(alice.address), types.uint(15)],
+        deployer.address
+      ),
+    ]);
+    first.receipts[0].result.expectOk();
+
+    // Immediate second call should be rejected
+    const second = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-labor",
+        [types.principal(alice.address), types.uint(15)],
+        deployer.address
+      ),
+    ]);
+    second.receipts[0].result.expectErr().expectUint(303);
+  },
+});
+
+Clarinet.test({
+  name: "reward-labor: succeeds after cooldown elapses",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+
+    chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-labor",
+        [types.principal(alice.address), types.uint(15)],
+        deployer.address
+      ),
+    ]);
+
+    chain.mineEmptyBlockUntil(chain.blockHeight + 150);
+
+    const second = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-labor",
+        [types.principal(alice.address), types.uint(15)],
+        deployer.address
+      ),
+    ]);
+    second.receipts[0].result.expectOk();
+  },
+});
