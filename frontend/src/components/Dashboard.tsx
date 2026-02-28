@@ -14,6 +14,7 @@ import {
   isMember,
 } from "../lib/read";
 import { SkeletonCard } from "./SkeletonCard";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface Stats {
   trustScore: number;
@@ -77,6 +78,7 @@ export default function Dashboard() {
   }, [address]);
 
   useEffect(() => { loadStats(); }, [loadStats]);
+  useWindowFocus(loadStats);
 
   if (!connected) {
     return (
