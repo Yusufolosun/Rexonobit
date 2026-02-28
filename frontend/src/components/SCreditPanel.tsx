@@ -5,6 +5,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import { mintSCredit, burnSCredit, transferSCredit } from "../lib/transactions";
 import { getSCreditBalance, getCreditLimit, getTrustScore, getLockedBalance } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validateSTX, validatePrincipal } from "../lib/validators";
 
 interface CreditState {
   balance: number;
@@ -23,11 +25,11 @@ export default function SCreditPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Forms
-  const [mintAmt, setMintAmt] = useState("");
-  const [burnAmt, setBurnAmt] = useState("");
-  const [transferTo, setTransferTo] = useState("");
-  const [transferAmt, setTransferAmt] = useState("");
+  // Forms with validation
+  const mintAmt = useFormField("", validateSTX);
+  const burnAmt = useFormField("", validateSTX);
+  const transferTo = useFormField("", validatePrincipal);
+  const transferAmt = useFormField("", validateSTX);
 
   const refresh = useCallback(async () => {
     if (!address) return;
