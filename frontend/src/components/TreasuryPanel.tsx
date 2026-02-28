@@ -117,8 +117,8 @@ export default function TreasuryPanel() {
   };
 
   return (
-    <section id="treasury" className="page-container">
-      <h2 className="section-title">Treasury</h2>
+    <section id="treasury" className="page-container" aria-labelledby="treasury-title">
+      <h2 id="treasury-title" className="section-title">Treasury</h2>
 
       {loading && (
         <div className="grid-3" style={{ marginBottom: "1rem" }}>
