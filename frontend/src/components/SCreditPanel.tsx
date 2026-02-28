@@ -129,6 +129,8 @@ export default function SCreditPanel() {
               </div>
               <button
                 className="btn-primary"
+                aria-busy={txPending}
+                aria-label="Mint sCREDIT tokens"
                 disabled={txPending || !mintAmt.value || trustScore < 700}
                 onClick={() => {
                   if (!mintAmt.validate()) return;
@@ -150,6 +152,8 @@ export default function SCreditPanel() {
               </div>
               <button
                 className="btn-secondary"
+                aria-busy={txPending}
+                aria-label="Burn sCREDIT tokens"
                 disabled={txPending || !burnAmt.value}
                 onClick={() => {
                   if (!burnAmt.validate()) return;
@@ -177,6 +181,8 @@ export default function SCreditPanel() {
               </div>
               <button
                 className="btn-secondary"
+                aria-busy={txPending}
+                aria-label="Transfer sCREDIT to recipient"
                 disabled={txPending || !transferTo.value || !transferAmt.value}
                 onClick={() => {
                   if (!transferTo.validate() || !transferAmt.validate()) return;
