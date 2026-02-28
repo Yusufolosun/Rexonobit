@@ -135,3 +135,60 @@ Clarinet.test({
     block.receipts[0].result.expectOk().expectBool(true);
   },
 });
+
+Clarinet.test({
+  name: "post-task: zero bounty is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("labor-market", "post-task", [types.utf8("Zero bounty"), types.utf8(""), types.uint(0)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "cancel-task: non-poster cannot cancel a task",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("labor-market", "post-task", [types.utf8("Alice's task"), types.utf8(""), types.uint(2_000_000)], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("labor-market", "cancel-task", [types.uint(1)], bob.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "bid-task: cannot bid on non-existent task",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { bob } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("labor-market", "bid-task", [types.uint(999), types.uint(1_000_000)], bob.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "approve-completion: non-poster cannot approve task completion",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setup(chain, accounts);
+    const charlie = accounts.get("wallet_3")!;
+    chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "register-member", [], charlie.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("labor-market", "post-task", [types.utf8("A task"), types.utf8(""), types.uint(2_000_000)], alice.address),
+      Tx.contractCall("labor-market", "bid-task", [types.uint(1), types.uint(1_800_000)], bob.address),
+      Tx.contractCall("labor-market", "accept-bid", [types.uint(1), types.principal(bob.address)], alice.address),
+      Tx.contractCall("labor-market", "submit-completion", [types.uint(1)], bob.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("labor-market", "approve-completion", [types.uint(1)], charlie.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
