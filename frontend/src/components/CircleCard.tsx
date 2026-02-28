@@ -34,7 +34,11 @@ export default function CircleCard({ circle, isMember, onJoin, onVouch, txPendin
   const full = circle.memberCount >= circle.maxMembers;
 
   return (
-    <div className="card">
+    <div
+      className="card"
+      role="article"
+      aria-label={`${circle.name} cooperative circle, ${circle.status}`}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
         <div>
           <h3 style={{ marginBottom: "0.15rem", fontSize: "1.05rem" }}>{circle.name}</h3>
@@ -78,6 +82,8 @@ export default function CircleCard({ circle, isMember, onJoin, onVouch, txPendin
             className="btn-primary"
             style={{ flex: 1, padding: "0.45rem" }}
             disabled={txPending}
+            aria-busy={txPending}
+            aria-label={`Request to join ${circle.name}`}
             onClick={() => onJoin?.(circle.id)}
           >
             {txPending ? <span className="spinner" /> : "Request to Join"}
@@ -88,6 +94,8 @@ export default function CircleCard({ circle, isMember, onJoin, onVouch, txPendin
             className="btn-secondary"
             style={{ flex: 1, padding: "0.45rem" }}
             disabled={txPending}
+            aria-busy={txPending}
+            aria-label={`Vouch a member for ${circle.name}`}
             onClick={() => onVouch?.(circle.id)}
           >
             Vouch Member
