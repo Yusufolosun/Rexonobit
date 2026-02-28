@@ -6,6 +6,49 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.7.0] — 2024-07-15
+
+### Added — Frontend Hooks
+- `useNetworkStatus` — online/offline detection with Network Information API
+- `useKeyboardShortcut` — global keyboard shortcut with modifier key support
+- `useHover` — hover state tracker via DOM ref
+- `useIntersectionObserver` — viewport intersection with freeze-on-visible
+- `useDarkMode` — dark/light scheme toggle with localStorage persistence
+- `useContractCall` — `@stacks/connect` contract call with status/txId/error state
+
+### Added — UI Components
+- `ConfirmModal` — accessible confirmation dialog with Escape/overlay dismiss
+- `NetworkBadge` — mainnet/testnet/devnet/mocknet colour-coded pill
+- `AlertBanner` — dismissible info/success/warning/error inline alert
+- `TxStatusBadge` — Stacks `tx_status` colour-coded badge
+- `ConnectionStatus` — offline detection banner
+
+### Added — Library Modules
+- `lib/api.ts` — typed Stacks Blockchain API helpers (account, block, tx, read-only, broadcast)
+- `lib/errors.ts` — typed error classes, contract error parser, `getUserMessage()`
+
+### Added — Architecture Docs
+- `docs/architecture/savings-vault-mechanics.md`
+- `docs/architecture/protocol-config-reference.md`
+- `docs/architecture/reputation-nft-mechanics.md`
+
+### Added — Integration Tests
+- `tests/rosca-integration.test.ts` — 6 integration scenarios
+- `tests/lending-pool-lifecycle.test.ts` — 6 lifecycle scenarios
+- `tests/trust-score-lifecycle.test.ts` — 6 lifecycle scenarios
+- `tests/synthetic-credit-lifecycle.test.ts` — 5 lifecycle scenarios
+- `tests/treasury-lifecycle.test.ts` — 6 lifecycle scenarios
+
+### Added — CSS Utilities
+- Spacing utilities: `.m-*`, `.mt-*`, `.mb-*`, `.p-*`, `.px-*`, `.py-*`, `.mx-auto`
+- Shadow utilities: `.shadow-none` through `.shadow-xl`, `.shadow-inner`
+
+### Added — Build Tooling
+- Makefile `format` target — runs Prettier on `frontend/src`
+- Makefile `check-deps` target — runs `npm audit` in `frontend/`
+
+---
+
 ## [0.6.0] — 2024-07-01
 
 ### Added
