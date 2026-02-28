@@ -103,8 +103,8 @@ export default function ArbitrationPanel() {
   };
 
   return (
-    <section id="arbitration" className="page-container">
-      <h2 className="section-title">Arbitration</h2>
+    <section id="arbitration" className="page-container" aria-labelledby="arbitration-title">
+      <h2 id="arbitration-title" className="section-title">Arbitration</h2>
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         3-member inter-circle panel resolves disputes. Panelists must have trust ≥ 400 and not be from the same circle.
       </p>
