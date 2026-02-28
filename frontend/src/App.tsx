@@ -16,6 +16,7 @@ import MemberProfile from "./components/MemberProfile";
 import BadgeGallery from "./components/BadgeGallery";
 import TxHistory from "./components/TxHistory";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { ProtocolStats } from "./components/ProtocolStats";
 
 const divider = <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />;
 
@@ -24,6 +25,8 @@ function App() {
     <div style={{ minHeight: "100vh", background: "var(--color-background)" }}>
       <Navbar />
       <main style={{ paddingTop: "72px" }}>
+        <ErrorBoundary><ProtocolStats /></ErrorBoundary>
+        {divider}
         <ErrorBoundary><Dashboard /></ErrorBoundary>
         {divider}
         <ErrorBoundary><CircleList /></ErrorBoundary>
