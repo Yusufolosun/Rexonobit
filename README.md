@@ -357,3 +357,19 @@ Run all tests:
 ```bash
 clarinet test --costs    # also reports execution costs
 ```
+
+
+---
+
+## CI / CD Pipeline
+
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `ci.yml` | Push / PR | Clarinet check + test, frontend install |
+| `typecheck.yml` | Push `src/**` | `tsc --noEmit` across frontend |
+| `security-audit.yml` | Push / PR | `npm audit` + Gitleaks secret scan |
+| `codeql.yml` | Push / weekly | CodeQL static analysis (JS / TS) |
+| `stale.yml` | Daily schedule | Label stale issues; close after 7 idle days |
+| `release.yml` | Tag `v*` | type-check → build → zip → GitHub Release |
+
+All workflows live in `.github/workflows/`.
