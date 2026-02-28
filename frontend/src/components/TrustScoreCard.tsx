@@ -11,10 +11,17 @@ interface Props {
 
 const BAR_MAX = 1000;
 
-function ScoreBar({ value, max, color }: { value: number; max: number; color: string }) {
+function ScoreBar({ value, max, color, label }: { value: number; max: number; color: string; label?: string }) {
   const pct = Math.min(100, (value / max) * 100);
   return (
-    <div style={{ background: "var(--color-surface)", borderRadius: "4px", height: "8px", overflow: "hidden" }}>
+    <div
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-label={label ? `${label}: ${value} of ${max}` : undefined}
+      style={{ background: "var(--color-surface)", borderRadius: "4px", height: "8px", overflow: "hidden" }}
+    >
       <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: "4px", transition: "width 0.6s ease" }} />
     </div>
   );
@@ -41,7 +48,7 @@ export default function TrustScoreCard({ address }: Props) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
         <div>
           <span className="text-sm text-muted" style={{ display: "block" }}>Trust Score</span>
-          <span style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-0.04em" }}>{total}</span>
+          <span style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-0.04em" }} aria-label={`Trust score: ${total} out of 1000`}>{total}</span>
           <span className="text-muted" style={{ fontSize: "0.85rem" }}>&nbsp;/ 1000</span>
         </div>
         <span className={`badge badge-primary`} style={{ background: tierColor, color: "#0a0a0a", fontWeight: 700 }}>{tierLabel}</span>
