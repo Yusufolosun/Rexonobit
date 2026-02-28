@@ -152,7 +152,7 @@ export default function RoscaPanel() {
           disabled={txPending || !rName.value || !rContrib.value}
           onClick={() =>
             handle(
-              () => createRosca(rName.value, Math.floor(parseFloat(rContrib.value) * 1_000_000), parseInt(rCycle.value), parseInt(rMax.value)),
+              () => createRosca(rName.value, Math.floor(parseFloat(rContrib.value) * 1_000_000), parseInt(rMax.value), parseInt(rCycle.value)),
               "ROSCA created"
             )
           }
