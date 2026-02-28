@@ -13,6 +13,9 @@ import {
   cancelTask,
 } from "../lib/transactions";
 import { getTask, getTotalTasks } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validateSTX, validatePositiveInt, validateTaskTitle, validateTaskDescription, validatePrincipal } from "../lib/validators";
+import { FormInput, FormTextarea } from "./FormInput";
 
 interface Task {
   id: number;
@@ -42,15 +45,15 @@ export default function TaskBoard() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Post task form
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDesc, setTaskDesc] = useState("");
-  const [taskBounty, setTaskBounty] = useState("");
+  // Post task form with validation
+  const taskTitle = useFormField("", validateTaskTitle);
+  const taskDesc = useFormField("", validateTaskDescription);
+  const taskBounty = useFormField("", validateSTX);
 
-  // Action forms
-  const [taskId, setTaskId] = useState("");
-  const [bidAmt, setBidAmt] = useState("");
-  const [workerAddr, setWorkerAddr] = useState("");
+  // Action forms with validation
+  const taskId = useFormField("", (v) => validatePositiveInt(v, "Task ID"));
+  const bidAmt = useFormField("", validateSTX);
+  const workerAddr = useFormField("", validatePrincipal);
 
   const refresh = useCallback(async () => {
     if (!address) return;
