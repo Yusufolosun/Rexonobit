@@ -192,3 +192,47 @@ Clarinet.test({
     block.receipts[0].result.expectErr();
   },
 });
+
+// ---------------------------------------------------------------------------
+// cancel-task must respect protocol pause
+// ---------------------------------------------------------------------------
+Clarinet.test({
+  name: "cancel-task: rejected when protocol is paused",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { deployer, alice } = setup(chain, accounts);
+
+    // Alice creates a circle and posts a task
+    chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "create-circle",
+        [types.utf8("Test Circle"), types.utf8(""), types.bool(true), types.uint(0)],
+        alice.address
+      ),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall(
+        "labor-market",
+        "post-task",
+        [types.uint(1), types.utf8("Some work"), types.utf8("Details"), types.uint(1_000_000)],
+        alice.address
+      ),
+    ]);
+
+    // Deployer pauses the protocol
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "emergency-pause", [], deployer.address),
+    ]);
+
+    // cancel-task should now fail with ERR-PROTOCOL-PAUSED (u513)
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "labor-market",
+        "cancel-task",
+        [types.uint(1)],
+        alice.address
+      ),
+    ]);
+    block.receipts[0].result.expectErr().expectUint(513);
+  },
+});
