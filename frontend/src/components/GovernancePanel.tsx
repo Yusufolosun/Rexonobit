@@ -1,7 +1,7 @@
 // frontend/src/components/GovernancePanel.tsx
 // Trust-weighted governance: propose, vote, execute, veto
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   proposeGovernance,
@@ -73,6 +73,15 @@ export default function GovernancePanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
+
+  const activeProposals = useMemo(
+    () => proposals.filter((p) => p.status === "ACTIVE" || p.status === "active"),
+    [proposals]
+  );
+  const closedProposals = useMemo(
+    () => proposals.filter((p) => p.status !== "ACTIVE" && p.status !== "active"),
+    [proposals]
+  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
