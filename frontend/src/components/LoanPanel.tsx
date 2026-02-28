@@ -5,6 +5,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import { requestLoan, repayLoan, liquidateDefaulter, fundPool } from "../lib/transactions";
 import { getLoan, getPoolBalance, getTotalCircles } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validateSTX, validatePositiveInt } from "../lib/validators";
+import { FormInput } from "./FormInput";
 
 interface Loan {
   id: number;
@@ -30,14 +33,14 @@ export default function LoanPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Forms
-  const [reqCircle, setReqCircle] = useState("");
-  const [reqAmount, setReqAmount] = useState("");
-  const [repayLoanId, setRepayLoanId] = useState("");
-  const [repayAmt, setRepayAmt] = useState("");
-  const [liqLoanId, setLiqLoanId] = useState("");
-  const [fundCircle, setFundCircle] = useState("");
-  const [fundAmt, setFundAmt] = useState("");
+  // Forms with validation
+  const reqCircle = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
+  const reqAmount = useFormField("", validateSTX);
+  const repayLoanId = useFormField("", (v) => validatePositiveInt(v, "Loan ID"));
+  const repayAmt = useFormField("", validateSTX);
+  const liqLoanId = useFormField("", (v) => validatePositiveInt(v, "Loan ID"));
+  const fundCircle = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
+  const fundAmt = useFormField("", validateSTX);
 
   const refresh = useCallback(async () => {
     if (!address) return;
