@@ -18,6 +18,7 @@ import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validatePrincipal, validateMaxLength } from "../lib/validators";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface Proposal {
   id: number;
@@ -84,6 +85,7 @@ export default function TreasuryPanel() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
