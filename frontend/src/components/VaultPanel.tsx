@@ -1,6 +1,12 @@
 // frontend/src/components/VaultPanel.tsx
 // STX savings vault: deposit, lock, withdraw with streak display
 
+/**
+ * VaultPanel — savings vault interface.
+ * Manages deposit, lock-savings, withdraw, and withdraw-locked flows.
+ * Powered by the `useVault` hook; uses `useFormField` for validated inputs.
+ */
+
 import React, { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { deposit, lockSavings, withdraw, withdrawLocked } from "../lib/transactions";
