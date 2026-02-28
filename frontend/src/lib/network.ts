@@ -1,6 +1,13 @@
 // frontend/src/lib/network.ts
 // Stacks network configuration using @stacks/network
 
+/**
+ * @module network
+ * @description Stacks network configuration and contract address helpers.
+ * The active network is controlled by the `VITE_STACKS_NETWORK` environment
+ * variable (mainnet | testnet | devnet). Defaults to testnet.
+ */
+
 import { StacksTestnet, StacksMainnet, StacksDevnet } from "@stacks/network";
 
 type NetworkType = "mainnet" | "testnet" | "devnet";
@@ -11,6 +18,10 @@ const NETWORK_TYPE = (import.meta.env.VITE_STACKS_NETWORK ||
 export const STACKS_API_URL =
   import.meta.env.VITE_STACKS_API_URL || "https://api.testnet.hiro.so";
 
+/**
+ * Returns a Stacks network instance for the currently configured environment.
+ * @returns StacksMainnet | StacksTestnet | StacksDevnet
+ */
 export function getNetwork() {
   switch (NETWORK_TYPE) {
     case "mainnet":
