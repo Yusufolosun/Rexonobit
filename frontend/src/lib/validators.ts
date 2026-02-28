@@ -1,4 +1,10 @@
-/** Form validation utilities for REXONOBIT frontend */
+/**
+ * @module validators
+ * @description Pure validation utilities used by useFormField and FormInput.
+ * All functions return a `ValidationResult` — callers check `.valid` and
+ * display `.error` when invalid. No side effects.
+ * Form validation utilities for REXONOBIT frontend
+ */
 
 export interface ValidationResult {
   valid: boolean;
