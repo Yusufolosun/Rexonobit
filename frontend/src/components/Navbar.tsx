@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useWallet } from "../context/WalletContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { label: "Dashboard", href: "#dashboard" },
@@ -73,6 +74,9 @@ export default function Navbar() {
             </a>
           ))}
         </div>
+
+        {/* Theme toggle */}
+        <ThemeToggle />
 
         {/* Wallet button */}
         {connected ? (
