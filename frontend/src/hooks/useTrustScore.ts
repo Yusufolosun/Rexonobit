@@ -1,3 +1,9 @@
+/**
+ * @module useTrustScore
+ * @description React hook for REXONOBIT trust score state.
+ * Fetches decomposed trust score (savings, loan, endorsement, labor, penalty)
+ * for a given Stacks address via the trust-score contract.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { getTrustScoreFull } from '../lib/read';
 
