@@ -16,6 +16,7 @@ import {
   getCircle,
   getTotalCircles,
 } from "../lib/read";
+import { useToast } from "../context/ToastContext";
 
 export default function CircleList() {
   const { address, connected } = useWallet();
@@ -23,8 +24,7 @@ export default function CircleList() {
   const [memberStatus, setMemberStatus] = useState(false);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // New circle form
   const [circleName, setCircleName] = useState("");
@@ -63,14 +63,12 @@ export default function CircleList() {
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
-    setError(null);
-    setSuccess(null);
     try {
       const res = await fn();
-      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      toastSuccess(`${msg} submitted`, res.txid);
       setTimeout(refresh, 4000);
     } catch (e) {
-      setError(String(e));
+      toastError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -85,11 +83,8 @@ export default function CircleList() {
   }
 
   return (
-    <section id="circles" className="page-container">
-      <h2 className="section-title">Cooperative Circles</h2>
-
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+    <section id="circles" className="page-container" aria-labelledby="circles-title">
+      <h2 id="circles-title" className="section-title">Cooperative Circles</h2>
 
       {/* Register as member */}
       {!memberStatus && (
