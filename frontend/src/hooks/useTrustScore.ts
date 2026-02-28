@@ -37,7 +37,8 @@ export function useTrustScore(address: string | null): TrustScoreBreakdown {
     setLoading(true);
     setError(null);
     try {
-      const data = await getTrustScoreFull(address);
+      const raw = await getTrustScoreFull(address);
+      const data = raw as Record<string, number> | null;
       if (data) {
         setTotal(data.total ?? 0);
         setSavings(data.savings ?? 0);
@@ -64,3 +65,4 @@ export function useTrustScore(address: string | null): TrustScoreBreakdown {
     total >= 300 ? "bronze" : "none";
 
   return { total, savings, loan, endorsement, labor, penalty, tier, loading, error, refresh: fetch };
+}

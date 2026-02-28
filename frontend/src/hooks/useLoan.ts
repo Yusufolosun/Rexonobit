@@ -39,17 +39,24 @@ export function useLoan(loanId: number | null): UseLoanResult {
     setLoading(true);
     setError(null);
     try {
-      const data = await getLoan(loanId);
+      const raw = await getLoan(loanId);
+      const data = raw as Record<string, unknown> | null;
       if (data) {
+        const statusNum = Number(data.status ?? 0);
+        const statusLabel: LoanStatus | "unknown" =
+          statusNum === 1 ? "active" :
+          statusNum === 2 ? "repaid" :
+          statusNum === 3 ? "defaulted" : "unknown";
         setLoan({
           id: loanId,
-          borrower: data.borrower ?? '',
-          circleId: data['circle-id'] ?? 0,
-          amount: data.amount ?? 0,
-          repaid: data.repaid ?? 0,
-          dueBlock: data['due-block'] ?? 0,
-          status: data.status ?? 0,
-          requestedAt: data['requested-at'] ?? 0,
+          borrower: (data.borrower as string) ?? '',
+          circleId: Number(data['circle-id'] ?? 0),
+          amount: Number(data.amount ?? 0),
+          repaid: Number(data.repaid ?? 0),
+          dueBlock: Number(data['due-block'] ?? 0),
+          status: statusNum,
+          statusLabel,
+          requestedAt: Number(data['requested-at'] ?? 0),
         });
       }
     } catch (e: unknown) {

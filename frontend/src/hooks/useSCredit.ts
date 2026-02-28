@@ -6,7 +6,6 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getSCreditBalance, getCreditLimit, getTrustScore, getLockedBalance } from '../lib/read';
-import type { SCreditPosition } from '../lib/types';
 
 export interface SCreditState {
   balance: number;

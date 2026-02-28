@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
+  getVault,
   getVaultBalance,
   getLockedBalance,
-  getLockedUntil,
   getStreakStatus,
 } from '../lib/read';
-import type { VaultData } from '../lib/types';
+import type { VaultData, BlockHeight } from '../lib/types';
 
 /**
  * @module useVault
@@ -35,15 +35,16 @@ export function useVault(address: string | null): VaultState {
     setLoading(true);
     setError(null);
     try {
-      const [bal, locked, until, streakVal] = await Promise.all([
+      const [bal, locked, vault, streakVal] = await Promise.all([
         getVaultBalance(address),
         getLockedBalance(address),
-        getLockedUntil(address),
+        getVault(address),
         getStreakStatus(address),
       ]);
       setBalance(bal);
       setLockedBalance(locked);
-      setLockedUntil(until);
+      const vaultData = vault as Record<string, unknown> | null;
+      setLockedUntil(Number(vaultData?.['lock-until'] ?? 0));
       setStreak(Number(streakVal));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to fetch vault data');
@@ -56,6 +57,6 @@ export function useVault(address: string | null): VaultState {
     fetch();
   }, [fetch]);
 
-  return { balance, lockedBalance, lockedUntil, streak, loading, error, refresh: fetch };
+  return { balance, lockedBalance, lockedUntil: lockedUntil as BlockHeight, streak, loading, error, refresh: fetch };
 }
 

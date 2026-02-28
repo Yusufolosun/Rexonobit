@@ -36,18 +36,19 @@ export function useCircle(circleId: number | null): UseCircleResult {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCircle(circleId);
+      const raw = await getCircle(circleId);
+      const data = raw as Record<string, unknown> | null;
       if (data) {
         setCircle({
           id: circleId,
-          name: data.name ?? '',
-          admin: data.admin ?? '',
-          memberCount: data['member-count'] ?? 0,
-          maxSize: data['max-size'] ?? 0,
-          status: data.status ?? 0,
-          circleType: data['circle-type'] ?? 0,
-          totalSaved: data['total-saved'] ?? 0,
-          createdAt: data['created-at'] ?? 0,
+          name: (data.name as string) ?? '',
+          admin: (data.admin as string) ?? '',
+          memberCount: Number(data['member-count'] ?? 0),
+          maxSize: Number(data['max-size'] ?? 0),
+          status: Number(data.status ?? 0),
+          circleType: Number(data['circle-type'] ?? 0),
+          totalSaved: Number(data['total-saved'] ?? 0),
+          createdAt: Number(data['created-at'] ?? 0),
         });
       }
     } catch (e: unknown) {

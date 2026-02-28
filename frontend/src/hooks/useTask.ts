@@ -5,7 +5,6 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getTask } from '../lib/read';
-import type { TaskStatus } from '../lib/types';
 
 export interface TaskData {
   id: number;
@@ -37,19 +36,20 @@ export function useTask(taskId: number | null): UseTaskResult {
     setLoading(true);
     setError(null);
     try {
-      const data = await getTask(taskId);
+      const raw = await getTask(taskId);
+      const data = raw as Record<string, unknown> | null;
       if (data) {
         setTask({
           id: taskId,
-          poster: data.poster ?? '',
-          worker: data.worker ?? null,
-          title: data.title ?? '',
-          description: data.description ?? '',
-          bounty: data.bounty ?? 0,
-          status: data.status ?? 0,
-          circleId: data['circle-id'] ?? 0,
-          attestations: data.attestations ?? 0,
-          postedAt: data['posted-at'] ?? 0,
+          poster: (data.poster as string) ?? '',
+          worker: (data.worker as string) ?? null,
+          title: (data.title as string) ?? '',
+          description: (data.description as string) ?? '',
+          bounty: Number(data.bounty ?? 0),
+          status: Number(data.status ?? 0),
+          circleId: Number(data['circle-id'] ?? 0),
+          attestations: Number(data.attestations ?? 0),
+          postedAt: Number(data['posted-at'] ?? 0),
         });
       }
     } catch (e: unknown) {

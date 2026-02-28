@@ -6,7 +6,6 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getRosca } from '../lib/read';
-import type { RoscaStatus } from '../lib/types';
 
 export interface RoscaData {
   id: number;
@@ -38,19 +37,20 @@ export function useRosca(roscaId: number | null): UseRoscaResult {
     setLoading(true);
     setError(null);
     try {
-      const data = await getRosca(roscaId);
+      const raw = await getRosca(roscaId);
+      const data = raw as Record<string, unknown> | null;
       if (data) {
         setRosca({
           id: roscaId,
-          circleId: data['circle-id'] ?? 0,
-          contributionAmount: data['contribution-amount'] ?? 0,
-          cycleLengthBlocks: data['cycle-length-blocks'] ?? 0,
-          currentCycle: data['current-cycle'] ?? 0,
-          totalCycles: data['total-cycles'] ?? 0,
-          status: data.status ?? 0,
-          currentPot: data['current-pot'] ?? 0,
-          startBlock: data['start-block'] ?? 0,
-          payoutOrder: data['payout-order'] ?? [],
+          circleId: Number(data['circle-id'] ?? 0),
+          contributionAmount: Number(data['contribution-amount'] ?? 0),
+          cycleLengthBlocks: Number(data['cycle-length-blocks'] ?? 0),
+          currentCycle: Number(data['current-cycle'] ?? 0),
+          totalCycles: Number(data['total-cycles'] ?? 0),
+          status: Number(data.status ?? 0),
+          currentPot: Number(data['current-pot'] ?? 0),
+          startBlock: Number(data['start-block'] ?? 0),
+          payoutOrder: (data['payout-order'] as string[]) ?? [],
         });
       }
     } catch (e: unknown) {
