@@ -138,3 +138,43 @@ Clarinet.test({
     block.receipts[0].result.expectErr().expectUint(ERR_BELOW_SUPERMAJORITY);
   },
 });
+
+Clarinet.test({
+  name: "vote: cannot vote on non-existent proposal",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("governance", "vote", [types.uint(999), types.bool(true)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "propose: non-member cannot create a proposal",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const stranger = accounts.get("wallet_5")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("governance", "propose", [types.ascii("POLICY-UPDATE"), types.utf8("Test"), types.utf8(""), types.none(), types.none()], stranger.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "veto: non-proposer cannot veto a proposal",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("governance", "propose", [types.ascii("POLICY-UPDATE"), types.utf8("Test"), types.utf8(""), types.none(), types.none()], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("governance", "veto", [types.uint(1)], bob.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
