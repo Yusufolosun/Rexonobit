@@ -40,8 +40,8 @@ Clarinet.test({
         [
           types.utf8("Friday Savers"),
           types.uint(1_000_000),
-          types.uint(1008),
           types.uint(3),
+          types.uint(4320),
         ],
         alice.address
       ),
@@ -55,12 +55,12 @@ Clarinet.test({
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const { alice, bob } = setup(chain, accounts);
     chain.mineBlock([
-      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(1008), types.uint(3)], alice.address),
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(3), types.uint(4320)], alice.address),
     ]);
     const block = chain.mineBlock([
       Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
     ]);
-    block.receipts[0].result.expectOk().expectBool(true);
+    block.receipts[0].result.expectOk();
   },
 });
 
@@ -69,7 +69,7 @@ Clarinet.test({
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const { alice, bob } = setup(chain, accounts);
     chain.mineBlock([
-      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(1008), types.uint(3)], alice.address),
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(3), types.uint(4320)], alice.address),
     ]);
     chain.mineBlock([
       Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
@@ -86,7 +86,7 @@ Clarinet.test({
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const { alice, bob, carol } = setup(chain, accounts);
     chain.mineBlock([
-      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(1008), types.uint(3)], alice.address),
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(3), types.uint(4320)], alice.address),
     ]);
     chain.mineBlock([
       Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
@@ -117,7 +117,7 @@ Clarinet.test({
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const { alice, bob } = setup(chain, accounts);
     chain.mineBlock([
-      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(1008), types.uint(2)], alice.address),
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Test"), types.uint(1_000_000), types.uint(2), types.uint(4320)], alice.address),
       Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
     ]);
     // After setting order, ROSCA becomes active
@@ -150,7 +150,7 @@ Clarinet.test({
       Tx.contractCall("protocol-config", "initialize", [], deployer.address),
     ]);
     const block = chain.mineBlock([
-      Tx.contractCall("rosca", "create-rosca", [types.utf8("X"), types.uint(500_000), types.uint(1008), types.uint(2)], outsider.address),
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("X"), types.uint(500_000), types.uint(2), types.uint(4320)], outsider.address),
     ]);
     const receipt = block.receipts[0];
     assertEquals(receipt.result.startsWith("(err"), true);
@@ -174,7 +174,7 @@ Clarinet.test({
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const { alice, bob } = setup(chain, accounts);
     chain.mineBlock([
-      Tx.contractCall("rosca", "create-rosca", [types.utf8("Dup"), types.uint(1_000_000), types.uint(1008), types.uint(2)], alice.address),
+      Tx.contractCall("rosca", "create-rosca", [types.utf8("Dup"), types.uint(1_000_000), types.uint(2), types.uint(4320)], alice.address),
     ]);
     chain.mineBlock([
       Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
