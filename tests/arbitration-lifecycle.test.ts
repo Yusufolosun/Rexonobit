@@ -127,3 +127,50 @@ Clarinet.test({
     info.result.expectOk();
   },
 });
+
+Clarinet.test({
+  name: "arbitration: respondent cannot open dispute against themselves",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setupMembers(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "arbitration",
+        "open-dispute",
+        [types.principal(alice.address), types.uint(1), types.ascii("Self-dispute attempt")],
+        alice.address
+      ),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "arbitration: unregistered member cannot open a dispute",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const stranger = accounts.get("wallet_5")!;
+    const bob = accounts.get("wallet_2")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], bob.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall(
+        "arbitration",
+        "open-dispute",
+        [types.principal(bob.address), types.uint(1), types.ascii("Attempt from stranger")],
+        stranger.address
+      ),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "arbitration: get-dispute on non-existent ID returns error",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setupMembers(chain, accounts);
+    const info = chain.callReadOnlyFn("arbitration", "get-dispute", [types.uint(999)], alice.address);
+    info.result.expectErr();
+  },
+});
