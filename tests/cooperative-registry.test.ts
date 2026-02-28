@@ -168,3 +168,76 @@ Clarinet.test({
     vouchBlock.receipts[0].result.expectOk().expectBool(true);
   },
 });
+
+Clarinet.test({
+  name: "register-member: already-registered member gets rejected on re-register",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "create-circle: unregistered user cannot create a circle",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const stranger = accounts.get("wallet_5")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "create-circle", [types.utf8("Stranger Circle"), types.uint(10)], stranger.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "vouch-for: cannot vouch for address in circle they are not a member of",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const bob = accounts.get("wallet_2")!;
+    const charlie = accounts.get("wallet_3")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], bob.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], charlie.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "create-circle", [types.utf8("Alice's Circle"), types.uint(10)], alice.address),
+    ]);
+    // Charlie tries to vouch for bob in alice's circle without being a member
+    const block = chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "vouch-for", [types.uint(1), types.principal(bob.address)], charlie.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "get-member: returns none for unregistered address",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const stranger = accounts.get("wallet_5")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const result = chain.callReadOnlyFn(
+      "cooperative-registry",
+      "get-member",
+      [types.principal(stranger.address)],
+      deployer.address
+    );
+    result.result.expectNone();
+  },
+});
