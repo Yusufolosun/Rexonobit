@@ -47,6 +47,23 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.4.0] — TypeScript strictness and accessibility audit
+
+### Changed
+- `frontend/tsconfig.app.json` — added `"noImplicitOverride": true`
+- `frontend/tsconfig.node.json` — added `"noImplicitOverride": true`
+- `TrustScoreCard` — `ScoreBar` now exposes `role="progressbar"`, `aria-valuenow/min/max`, `aria-label`; tier badge receives `aria-label`
+- `VaultPanel` — deposit, withdraw, and withdraw-locked buttons get `aria-busy={txPending}` and `aria-label`
+- `LoanPanel` — all four action buttons get `aria-busy` and `aria-label`
+- `GovernancePanel` — all five action buttons get `aria-busy` and `aria-label`
+- `TreasuryPanel` — deposit, propose, vote YES/NO, execute buttons get `aria-busy` and `aria-label`
+- `RoscaPanel` — create, join, lock, contribute, payout, set-order buttons get `aria-busy` and `aria-label`
+- `TaskBoard` — all seven task action buttons get `aria-busy` and `aria-label`
+- `ArbitrationPanel` — open, join panel, close, submit-verdict buttons get `aria-busy` and `aria-label`
+- `SCreditPanel` — mint, burn, transfer buttons get `aria-busy` and `aria-label`
+
+---
+
 ## [0.5.0] — UI component library expansion
 
 ### Added
