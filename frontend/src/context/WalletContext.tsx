@@ -17,23 +17,41 @@ import {
   userSession,
 } from "../lib/wallet";
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type NetworkMode = "mainnet" | "testnet" | "devnet";
+
 interface WalletContextType {
   address: string | null;
   connected: boolean;
+  network: NetworkMode;
   connect: () => void;
   disconnect: () => void;
+  setNetwork: (mode: NetworkMode) => void;
 }
 
 const WalletContext = createContext<WalletContextType>({
   address: null,
   connected: false,
+  network: "testnet",
   connect: () => {},
   disconnect: () => {},
+  setNetwork: () => {},
 });
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [network, setNetworkState] = useState<NetworkMode>(() => {
+    // Resolve initial network from env define injected by Vite
+    const envNet =
+      typeof __STACKS_NETWORK__ !== "undefined"
+        ? (String(__STACKS_NETWORK__) as NetworkMode)
+        : "testnet";
+    return envNet;
+  });
 
   const refresh = useCallback(() => {
     const isConnected = isWalletConnected();
@@ -60,8 +78,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setAddress(null);
   }, []);
 
+  const setNetwork = useCallback((mode: NetworkMode) => {
+    setNetworkState(mode);
+  }, []);
+
   return (
-    <WalletContext.Provider value={{ address, connected, connect, disconnect }}>
+    <WalletContext.Provider
+      value={{ address, connected, network, connect, disconnect, setNetwork }}
+    >
       {children}
     </WalletContext.Provider>
   );
@@ -70,3 +94,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 export function useWallet(): WalletContextType {
   return useContext(WalletContext);
 }
+
+// Ambient declaration for Vite define constant
+declare const __STACKS_NETWORK__: string | undefined;
