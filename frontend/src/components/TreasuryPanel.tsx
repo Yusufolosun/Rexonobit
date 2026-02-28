@@ -1,6 +1,12 @@
 // frontend/src/components/TreasuryPanel.tsx
 // Circle treasury: deposit, propose spend, vote, execute
 
+/**
+ * TreasuryPanel — circle treasury management interface.
+ * Supports deposits, governance-gated spend proposals, member voting,
+ * and proposal execution after quorum is reached.
+ */
+
 import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
