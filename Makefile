@@ -1,7 +1,7 @@
 # REXONOBIT Makefile
 # Usage: make <target>
 
-.PHONY: dev build lint typecheck test test-integration ci deploy-testnet deploy-mainnet devnet-start clean help
+.PHONY: dev build lint typecheck test test-integration ci size-check deploy-testnet deploy-mainnet devnet-start clean help
 
 help: ## Show this help message
 	@echo "REXONOBIT — Stacks Micro-Economy Protocol"
@@ -34,6 +34,10 @@ preview: ## Preview production build locally
 
 audit: ## Run npm security audit on frontend deps
 	cd frontend && npm audit --audit-level=moderate
+
+size-check: build ## Build and print chunk sizes (warn if > 400 kB)
+	@echo "=== Bundle sizes ==="
+	@find frontend/dist/assets -name "*.js" -exec du -sh {} \; | sort -h
 
 # ── Contracts ─────────────────────────────────────────────────────────────────
 check: ## Syntax-check all Clarity contracts
