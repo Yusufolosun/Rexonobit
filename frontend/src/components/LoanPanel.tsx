@@ -7,28 +7,17 @@
  * defaulters. Powered by the lending-pool contract.
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import { requestLoan, repayLoan, liquidateDefaulter, fundPool } from "../lib/transactions";
-import { getLoan, getPoolBalance, getTotalCircles } from "../lib/read";
+import { getPoolBalance, getTotalCircles } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt } from "../lib/validators";
-import { FormInput } from "./FormInput";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
 import { ErrorAlert } from "./ErrorAlert";
 import { useContractError } from "../hooks/useContractError";
-
-interface Loan {
-  id: number;
-  borrower: string;
-  circleId: number;
-  amount: number;
-  repaid: number;
-  dueAt: number;
-  status: string;
-}
 
 interface Pool {
   circleId: number;
@@ -37,7 +26,6 @@ interface Pool {
 
 export default function LoanPanel() {
   const { address, connected } = useWallet();
-  const [activeLoan, setActiveLoan] = useState<Loan | null>(null);
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
@@ -71,9 +59,6 @@ export default function LoanPanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
-
-  /** Pools with non-zero balances */
-  const activePools = useMemo(() => pools.filter((p) => p.balance > 0), [pools]);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
@@ -130,20 +115,20 @@ export default function LoanPanel() {
           <h3 style={{ marginBottom: "1rem" }}>Fund a Pool</h3>
           <div className="form-group">
             <label>Circle ID</label>
-            <input type="number" value={fundCircle} onChange={(e) => setFundCircle(e.target.value)} placeholder="1" />
+            <input type="number" value={fundCircle.value} onChange={fundCircle.onChange} placeholder="1" />
           </div>
           <div className="form-group">
             <label>Amount (STX)</label>
-            <input type="number" value={fundAmt} onChange={(e) => setFundAmt(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+            <input type="number" value={fundAmt.value} onChange={fundAmt.onChange} placeholder="0.0" min="0.000001" step="0.000001" />
           </div>
           <button
             className="btn-secondary"
             aria-busy={txPending}
             aria-label="Fund lending pool"
-            disabled={txPending || !fundCircle || !fundAmt}
+            disabled={txPending || !fundCircle.value || !fundAmt.value}
             onClick={() =>
               handle(
-                () => fundPool(parseInt(fundCircle), Math.floor(parseFloat(fundAmt) * 1_000_000)),
+                () => fundPool(parseInt(fundCircle.value), Math.floor(parseFloat(fundAmt.value) * 1_000_000)),
                 "Pool funded"
               )
             }
@@ -160,20 +145,20 @@ export default function LoanPanel() {
           </p>
           <div className="form-group">
             <label>Circle ID</label>
-            <input type="number" value={reqCircle} onChange={(e) => setReqCircle(e.target.value)} placeholder="1" />
+            <input type="number" value={reqCircle.value} onChange={reqCircle.onChange} placeholder="1" />
           </div>
           <div className="form-group">
             <label>Amount (STX)</label>
-            <input type="number" value={reqAmount} onChange={(e) => setReqAmount(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+            <input type="number" value={reqAmount.value} onChange={reqAmount.onChange} placeholder="0.0" min="0.000001" step="0.000001" />
           </div>
           <button
             className="btn-primary"
             aria-busy={txPending}
             aria-label="Request loan from pool"
-            disabled={txPending || !reqCircle || !reqAmount}
+            disabled={txPending || !reqCircle.value || !reqAmount.value}
             onClick={() =>
               handle(
-                () => requestLoan(parseInt(reqCircle), Math.floor(parseFloat(reqAmount) * 1_000_000)),
+                () => requestLoan(parseInt(reqCircle.value), Math.floor(parseFloat(reqAmount.value) * 1_000_000)),
                 "Loan requested"
               )
             }
@@ -187,20 +172,20 @@ export default function LoanPanel() {
           <h3 style={{ marginBottom: "1rem" }}>Repay Loan</h3>
           <div className="form-group">
             <label>Loan ID</label>
-            <input type="number" value={repayLoanId} onChange={(e) => setRepayLoanId(e.target.value)} placeholder="1" />
+            <input type="number" value={repayLoanId.value} onChange={repayLoanId.onChange} placeholder="1" />
           </div>
           <div className="form-group">
             <label>Amount (STX)</label>
-            <input type="number" value={repayAmt} onChange={(e) => setRepayAmt(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+            <input type="number" value={repayAmt.value} onChange={repayAmt.onChange} placeholder="0.0" min="0.000001" step="0.000001" />
           </div>
           <button
             className="btn-primary"
             aria-busy={txPending}
             aria-label="Repay loan"
-            disabled={txPending || !repayLoanId || !repayAmt}
+            disabled={txPending || !repayLoanId.value || !repayAmt.value}
             onClick={() =>
               handle(
-                () => repayLoan(parseInt(repayLoanId), Math.floor(parseFloat(repayAmt) * 1_000_000)),
+                () => repayLoan(parseInt(repayLoanId.value), Math.floor(parseFloat(repayAmt.value) * 1_000_000)),
                 "Repayment submitted"
               )
             }
@@ -217,14 +202,14 @@ export default function LoanPanel() {
           </p>
           <div className="form-group">
             <label>Loan ID</label>
-            <input type="number" value={liqLoanId} onChange={(e) => setLiqLoanId(e.target.value)} placeholder="1" />
+            <input type="number" value={liqLoanId.value} onChange={liqLoanId.onChange} placeholder="1" />
           </div>
           <button
             className="btn-secondary"
             aria-busy={txPending}
             aria-label="Liquidate defaulted loan"
-            disabled={txPending || !liqLoanId}
-            onClick={() => handle(() => liquidateDefaulter(parseInt(liqLoanId)), "Liquidation submitted")}
+            disabled={txPending || !liqLoanId.value}
+            onClick={() => handle(() => liquidateDefaulter(parseInt(liqLoanId.value)), "Liquidation submitted")}
           >
             {txPending ? <span className="spinner" /> : "Liquidate"}
           </button>
