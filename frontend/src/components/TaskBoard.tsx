@@ -26,6 +26,8 @@ import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonRow } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 interface Task {
   id: number;
@@ -52,7 +54,8 @@ export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   // Post task form with validation
   const taskTitle = useFormField("", validateTaskTitle);
@@ -97,9 +100,10 @@ export default function TaskBoard() {
     try {
       const res = await fn();
       toastSuccess(msg, res.txid);
+      clearError();
       setTimeout(refresh, 4000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -119,6 +123,7 @@ export default function TaskBoard() {
   return (
     <section id="tasks" className="page-container" aria-labelledby="tasks-title">
       <h2 id="tasks-title" className="section-title">Labor Market</h2>
+      <ErrorAlert error={contractError} onDismiss={clearError} />
 
       {/* Post Task */}}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
