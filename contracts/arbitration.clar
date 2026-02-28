@@ -161,12 +161,14 @@
       (new-for-r  (if (is-eq verdict VERDICT-FAVOR-RESPONDENT)
                     (+ (get votes-for-respondent dispute) u1)
                     (get votes-for-respondent dispute)))
-      (all-voted  (>= (+ new-for-c new-for-r) u2))
+      (new-cast   (+ (get votes-cast dispute) u1))
+      (all-voted  (>= new-cast (len panel)))
     )
       (map-set disputes { dispute-id: dispute-id }
         (merge dispute
           { votes-for-claimant:   new-for-c,
             votes-for-respondent: new-for-r,
+            votes-cast:           new-cast,
             status: (if all-voted DISPUTE-VERDICT (get status dispute)) }))
       (ok all-voted)
     )
