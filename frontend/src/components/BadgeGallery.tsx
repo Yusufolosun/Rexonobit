@@ -70,7 +70,12 @@ export function BadgeGallery() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2 className="section-title" style={{ margin: 0 }}>Soulbound Badges</h2>
         <a href={explorerAddressUrl(address)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>View on Explorer ↗</a>
-        <button className="btn-secondary" onClick={refresh} style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+        <button
+          className="btn-secondary"
+          onClick={refresh}
+          style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+          aria-label="Refresh badge gallery"
+        >
           Refresh
         </button>
       </div>
@@ -85,12 +90,14 @@ export function BadgeGallery() {
           <p className="text-muted">No badges yet. Complete protocol actions to earn soulbound NFTs.</p>
         </div>
       ) : (
-        <div className="grid-3" style={{ gap: '0.75rem' }}>
+        <div className="grid-3" style={{ gap: '0.75rem' }} role="list" aria-label="Earned badges">
           {badges.map(badge => {
             const meta = BADGE_META[badge.badgeType] ?? { label: `Badge #${badge.badgeType}`, description: '', color: '#888', icon: '🏅' };
             return (
               <div
                 key={badge.tokenId}
+                role="listitem"
+                aria-label={`${meta.label} badge — ${meta.description}`}
                 style={{
                   background: 'var(--color-surface-2)',
                   borderRadius: 'var(--radius)',
@@ -118,14 +125,20 @@ export function BadgeGallery() {
       {/* All badge types as locked/unlocked grid */}
       <div style={{ marginTop: '1.5rem' }}>
         <p className="text-muted text-sm" style={{ marginBottom: '0.75rem' }}>All achievement badges:</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div
+          style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}
+          role="list"
+          aria-label="All achievement badges"
+        >
           {Object.entries(BADGE_META).map(([typeStr, meta]) => {
             const typeNum = parseInt(typeStr, 10);
             const earned = badges.some(b => b.badgeType === typeNum);
             return (
               <div
                 key={typeStr}
+                role="listitem"
                 title={meta.description}
+                aria-label={`${meta.label}: ${earned ? 'earned' : 'not yet earned'}`}
                 style={{
                   padding: '0.4rem 0.75rem',
                   borderRadius: '999px',
