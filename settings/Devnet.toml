@@ -1,0 +1,59 @@
+# settings/Devnet.toml
+# Local Clarinet development network configuration
+# Safe to commit — no secrets, no mainnet keys
+# Mainnet.toml and Testnet.toml are gitignored for security
+
+[network]
+name = "devnet"
+deployment_fee_rate = 10
+
+[accounts.deployer]
+mnemonic = "fetch outside black test wash arm spider conventionally spoke sender heart copy"
+balance = 100_000_000_000_000
+# ^^^ local devnet test mnemonic — NOT real keys — safe to commit
+
+[accounts.wallet_1]
+mnemonic = "sell invite acquire kitten bamboo minor name ask excuse skip interesting cold"
+balance = 100_000_000_000_000
+
+[accounts.wallet_2]
+mnemonic = "hold excess usual excess ring elephant install account glad dry fragile donkey"
+balance = 100_000_000_000_000
+
+[accounts.wallet_3]
+mnemonic = "cycle puppy glare enroll cost improve round trend wrist mushroom scorpion tower"
+balance = 100_000_000_000_000
+
+[accounts.wallet_4]
+mnemonic = "board list obtain sugar hour worth raven scout denial thunder hope language"
+balance = 100_000_000_000_000
+
+[accounts.wallet_5]
+mnemonic = "hurry aunt blame peanut heavy update captain human rice crime juice adult"
+balance = 100_000_000_000_000
+
+[accounts.wallet_6]
+mnemonic = "area desk dutch sign gold cricket dawn toward giggle vibrant indoor bench"
+balance = 100_000_000_000_000
+
+[accounts.wallet_7]
+mnemonic = "prevent gallery kind limb income control noise together echo rival record maid"
+balance = 100_000_000_000_000
+
+[accounts.wallet_8]
+mnemonic = "august drop replica today hung cricket contest unclear novel during cable panic"
+balance = 100_000_000_000_000
+
+[accounts.wallet_9]
+mnemonic = "banner extend replace cricket rubber dream gift skill clean enroll fix spell"
+balance = 100_000_000_000_000
+
+[devnet]
+# Local Stacks node settings for clarinet integrate
+pox_stacking_orders = []
+disable_stacks_api = false
+disable_bitcoin_explorer = false
+disable_stacks_explorer = false
+working_dir = "/tmp/rexonobit-devnet"
+stacks_node_events_observers = []
+bitcoin_controller_secret_key = "bce8a680fa8f044cfb18cbfe7e4bfd3e04a5df4a7c5d22f99a2be7ad0ac5d59301"

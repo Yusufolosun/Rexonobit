@@ -31,10 +31,10 @@ deployment-keys.json
 !.env.example
 !.env.test.example
 
-# Clarinet wallet / secrets
+# Clarinet wallet / secrets — Mainnet and Testnet contain real keys
 settings/Mainnet.toml
 settings/Testnet.toml
-settings/Devnet.toml
+# Devnet.toml is safe (local test mnemonics only) — committed to repo
 clarinet-accounts.toml
 
 # ----------------------------------------------------------------
