@@ -1,6 +1,14 @@
 // frontend/src/lib/wallet.ts
 // Wallet connection helpers using @stacks/connect
 
+/**
+ * @module wallet
+ * @description Stacks wallet integration using `@stacks/connect`.
+ * Provides `connectWallet`, `disconnectWallet`, and `getUserSession`
+ * helpers consumed by `WalletContext`. Never stores private key material —
+ * all signing happens inside the user's Hiro Wallet extension.
+ */
+
 import {
   showConnect,
   UserSession,
