@@ -47,6 +47,22 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.2.0] — CI workflows and test expansion
+
+### Added
+- `.github/workflows/typecheck.yml` — dedicated TypeScript type-check on all `src/` changes
+- `.github/workflows/security-audit.yml` — `npm audit` + Gitleaks secret scan
+- `.github/workflows/codeql.yml` — CodeQL static analysis (JS/TS) on push and weekly schedule
+- `.github/workflows/stale.yml` — auto-label stale issues/PRs; close if no activity after 7 days
+- `.github/workflows/release.yml` — on tag push: type-check → build → zip → create GitHub Release
+- Edge-case test suites appended to all 14 Clarinet test files (3–5 tests per file)
+- `Makefile` targets: `format`, `preview`, `audit`, `clean-all`
+
+### Changed
+- Existing CI workflow extended with `frontend/` job matrix
+
+---
+
 ## [0.3.0] — Utility hooks and lib utilities
 
 ### Added
