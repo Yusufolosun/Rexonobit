@@ -168,12 +168,28 @@
     (total-w    (get total-weight proposal))
     (yes-w      (get yes-weight proposal))
     (yes-bps    (if (> total-w u0) (/ (* yes-w u10000) total-w) u0))
+    (p-type     (get proposal-type proposal))
   )
     (asserts! (not (is-protocol-paused))                             ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status proposal) STATUS-OPEN)               ERR-PROPOSAL-EXECUTED)
     (asserts! (> block-height (get vote-until proposal))              ERR-VOTE-CLOSED)
     (asserts! (>= block-height (get execute-after proposal))          ERR-TIMELOCK-ACTIVE)
     (asserts! (>= yes-bps supermaj)                                   ERR-QUORUM-NOT-MET)
+    ;; Dispatch based on proposal type
+    (if (is-eq p-type PROPOSAL-PARAM-CHANGE)
+      (try! (as-contract
+        (contract-call? PROTOCOL-CFG set-param
+          (get param-key proposal) (get param-value proposal))))
+      (if (is-eq p-type PROPOSAL-EXPEL-MEMBER)
+        (try! (as-contract
+          (contract-call? REGISTRY expel-member
+            (get circle-id proposal)
+            (unwrap! (get target proposal) ERR-NOT-AUTHORIZED))))
+        ;; PROPOSAL-TREASURY-SPEND and PROPOSAL-POLICY-UPDATE
+        ;; are recorded on-chain for audit; no automatic dispatch
+        true
+      )
+    )
     (map-set proposals { proposal-id: proposal-id }
       (merge proposal { status: STATUS-EXECUTED, executed-at: block-height }))
     (ok true)
