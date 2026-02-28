@@ -1,6 +1,14 @@
 // frontend/src/lib/constants.ts
 // Shared constants: contract names, error codes, thresholds
 
+/**
+ * @module constants
+ * @description Protocol-wide constants shared across hooks and components.
+ * Includes contract name strings (kept in sync with Clarinet.toml),
+ * Clarity error codes, trust tier thresholds, STX unit helpers, and
+ * pagination/polling defaults.
+ */
+
 // ---------------------------------------------------------------------------
 // Contract names — keep in sync with Clarinet.toml
 // ---------------------------------------------------------------------------
