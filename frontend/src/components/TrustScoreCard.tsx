@@ -51,10 +51,10 @@ export default function TrustScoreCard({ address }: Props) {
           <span style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-0.04em" }} aria-label={`Trust score: ${total} out of 1000`}>{total}</span>
           <span className="text-muted" style={{ fontSize: "0.85rem" }}>&nbsp;/ 1000</span>
         </div>
-        <span className={`badge badge-primary`} style={{ background: tierColor, color: "#0a0a0a", fontWeight: 700 }}>{tierLabel}</span>
+        <span className={`badge badge-primary`} style={{ background: tierColor, color: "#0a0a0a", fontWeight: 700 }} aria-label={`Trust tier: ${tierLabel}`}>{tierLabel}</span>
       </div>
 
-      <ScoreBar value={total} max={BAR_MAX} color="var(--color-primary)" />
+      <ScoreBar value={total} max={BAR_MAX} color="var(--color-primary)" label="Total trust score" />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "1.25rem" }}>
         {[
@@ -69,7 +69,7 @@ export default function TrustScoreCard({ address }: Props) {
               <span className="text-sm text-muted">{label}</span>
               <span className="text-sm" style={{ fontWeight: 600 }}>{value}</span>
             </div>
-            <ScoreBar value={value} max={300} color={color} />
+            <ScoreBar value={value} max={300} color={color} label={label} />
           </div>
         ))}
       </div>
