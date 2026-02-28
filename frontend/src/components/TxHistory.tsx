@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { STACKS_API_URL } from '../lib/network';
 import { explorerTxUrl } from '../lib/explorer';
@@ -85,7 +85,10 @@ export function TxHistory() {
     );
   }
 
-  const filtered = filter === 'all' ? txs : txs.filter(t => t.status === filter);
+  const filtered = useMemo(
+    () => filter === 'all' ? txs : txs.filter(t => t.status === filter),
+    [txs, filter]
+  );
 
   return (
     <div className="card">
