@@ -241,3 +241,59 @@ Clarinet.test({
     result.result.expectNone();
   },
 });
+
+Clarinet.test({
+  name: "expel-member: expelled member stays active globally",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const bob = accounts.get("wallet_2")!;
+
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], bob.address),
+    ]);
+    // Alice creates an open circle; bob joins
+    chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "create-circle",
+        [types.utf8("Scope Test"), types.utf8(""), types.bool(true), types.uint(0)],
+        alice.address
+      ),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("cooperative-registry", "request-join", [types.uint(1)], bob.address),
+    ]);
+
+    // Alice (admin, role u2) expels bob
+    const expelBlock = chain.mineBlock([
+      Tx.contractCall(
+        "cooperative-registry",
+        "expel-member",
+        [types.uint(1), types.principal(bob.address)],
+        alice.address
+      ),
+    ]);
+    expelBlock.receipts[0].result.expectOk().expectBool(true);
+
+    // Bob should no longer be a circle member …
+    const circleCheck = chain.callReadOnlyFn(
+      "cooperative-registry",
+      "is-circle-member",
+      [types.uint(1), types.principal(bob.address)],
+      deployer.address
+    );
+    circleCheck.result.expectBool(false);
+
+    // … but should still be globally active
+    const activeCheck = chain.callReadOnlyFn(
+      "cooperative-registry",
+      "is-active-member",
+      [types.principal(bob.address)],
+      deployer.address
+    );
+    activeCheck.result.expectBool(true);
+  },
+});

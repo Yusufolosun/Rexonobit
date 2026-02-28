@@ -244,10 +244,14 @@
     (map-delete circle-members { circle-id: circle-id, member: target })
     (map-set circles { id: circle-id }
       (merge circle { member-count: (- (get member-count circle) u1) }))
-    ;; Mark member as expelled globally
+    ;; Decrement the member's circle count but keep their global status
+    ;; untouched — expulsion is circle-scoped.  Protocol-wide bans go
+    ;; through suspend-member instead.
     (match (map-get? members { address: target })
       m (map-set members { address: target }
-           (merge m { status: STATUS-EXPELLED }))
+           (merge m { circle-count: (if (> (get circle-count m) u0)
+                                        (- (get circle-count m) u1)
+                                        u0) }))
       false
     )
     (ok true)
