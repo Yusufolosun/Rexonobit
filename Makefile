@@ -1,7 +1,7 @@
 # REXONOBIT Makefile
 # Usage: make <target>
 
-.PHONY: dev build lint typecheck test test-integration deploy-testnet deploy-mainnet devnet-start clean help
+.PHONY: dev build lint typecheck test test-integration ci deploy-testnet deploy-mainnet devnet-start clean help
 
 help: ## Show this help message
 	@echo "REXONOBIT — Stacks Micro-Economy Protocol"
@@ -20,6 +20,8 @@ lint: ## Run ESLint on frontend
 
 typecheck: ## TypeScript type-check frontend (no emit)
 	cd frontend && npx tsc --noEmit
+
+ci: install typecheck lint build test ## Run full CI pipeline: install → typecheck → lint → build → test
 
 install: ## Install frontend dependencies
 	cd frontend && npm install
