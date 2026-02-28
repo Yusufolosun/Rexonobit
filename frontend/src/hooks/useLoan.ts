@@ -1,3 +1,9 @@
+/**
+ * @module useLoan
+ * @description React hook for REXONOBIT lending-pool loan state.
+ * Fetches the active loan for a given Stacks address from the lending-pool
+ * contract. Exposes a refresh callback for manual invalidation.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { getLoan } from '../lib/read';
 
