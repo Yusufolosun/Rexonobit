@@ -9,6 +9,7 @@ import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validateBlockCount } from "../lib/validators";
 import { FormInput } from "./FormInput";
 import { useToast } from "../context/ToastContext";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface VaultState {
   balance: number;
@@ -47,6 +48,7 @@ export default function VaultPanel() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
