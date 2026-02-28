@@ -48,15 +48,14 @@ export function isWalletConnected(): boolean {
   return userSession.isUserSignedIn();
 }
 
-export function getConnectedAddress(): string | null {
+export function getConnectedAddress(
+  network: "mainnet" | "testnet" | "devnet" = "testnet"
+): string | null {
   if (!isWalletConnected()) return null;
   try {
     const userData = userSession.loadUserData();
-    return (
-      userData?.profile?.stxAddress?.testnet ||
-      userData?.profile?.stxAddress?.mainnet ||
-      null
-    );
+    const key = network === "mainnet" ? "mainnet" : "testnet";
+    return userData?.profile?.stxAddress?.[key] || null;
   } catch {
     return null;
   }
