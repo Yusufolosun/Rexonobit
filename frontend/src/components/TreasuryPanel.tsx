@@ -7,7 +7,7 @@
  * and proposal execution after quorum is reached.
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   depositToTreasury,
@@ -92,6 +92,17 @@ export default function TreasuryPanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
+
+  /** Proposals awaiting quorum or execution */
+  const pendingProposals = useMemo(
+    () => proposals.filter((p) => p.status?.toLowerCase() === "pending" || p.status?.toLowerCase() === "active"),
+    [proposals]
+  );
+  /** Proposals that have been executed */
+  const executedProposals = useMemo(
+    () => proposals.filter((p) => p.status?.toLowerCase() === "executed"),
+    [proposals]
+  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
