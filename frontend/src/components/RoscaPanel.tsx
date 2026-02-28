@@ -97,8 +97,8 @@ export default function RoscaPanel() {
   };
 
   return (
-    <section id="rosca" className="page-container">
-      <h2 className="section-title">ROSCA Groups</h2>
+    <section id="rosca" className="page-container" aria-labelledby="rosca-title">
+      <h2 id="rosca-title" className="section-title">ROSCA Groups</h2>
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         Rotating Savings and Credit Associations — Susu / Chit Fund on Stacks.
       </p>
