@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getLoan } from '../lib/read';
+import type { LoanStatus } from '../lib/types';
 
 export interface LoanData {
   id: number;
@@ -14,7 +15,10 @@ export interface LoanData {
   amount: number;
   repaid: number;
   dueBlock: number;
+  /** Numeric status code; use LoanStatus label for display. */
   status: number;
+  /** Derived human-readable status label. */
+  statusLabel: LoanStatus | "unknown";
   requestedAt: number;
 }
 
