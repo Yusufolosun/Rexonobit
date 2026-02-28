@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { getNetwork } from '../lib/network';
+import { STACKS_API_URL } from '../lib/network';
+import { explorerAddressUrl } from '../lib/explorer';
 import { SkeletonCard } from './SkeletonCard';
 
 interface Badge {
@@ -20,8 +21,7 @@ const BADGE_META: Record<number, { label: string; description: string; color: st
 };
 
 async function fetchBadges(address: string): Promise<Badge[]> {
-  const network = getNetwork();
-  const apiBase = import.meta.env.VITE_STACKS_API_URL ?? (network.isMainnet() ? 'https://api.mainnet.hiro.so' : 'https://api.testnet.hiro.so');
+  const apiBase = STACKS_API_URL;
   try {
     const resp = await fetch(`${apiBase}/extended/v1/tokens/nft/holdings?principal=${address}&limit=50`);
     if (!resp.ok) return [];
@@ -69,6 +69,7 @@ export function BadgeGallery() {
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2 className="section-title" style={{ margin: 0 }}>Soulbound Badges</h2>
+        <a href={explorerAddressUrl(address)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>View on Explorer ↗</a>
         <button className="btn-secondary" onClick={refresh} style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
           Refresh
         </button>
