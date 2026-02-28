@@ -16,6 +16,7 @@ import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validateBlockCount, validateMaxLength, validatePrincipalList } from "../lib/validators";
 import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonCard } from "./SkeletonCard";
+import { useToast } from "../context/ToastContext";
 
 interface RoscaData {
   id: number;
@@ -35,8 +36,7 @@ export default function RoscaPanel() {
   const [roscas, setRoscas] = useState<RoscaData[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // Create form with validation
   const rName = useFormField("", (v) => validateMaxLength(v, 50, "Name"));
@@ -68,14 +68,12 @@ export default function RoscaPanel() {
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
-    setError(null);
-    setSuccess(null);
     try {
       const res = await fn();
-      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      toastSuccess(msg, res.txid);
       setTimeout(refresh, 4000);
     } catch (e) {
-      setError(String(e));
+      toastError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -105,8 +103,6 @@ export default function RoscaPanel() {
         Rotating Savings and Credit Associations — Susu / Chit Fund on Stacks.
       </p>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
       {loading && (
         <div className="grid-2" style={{ marginBottom: "1rem" }}>
           {[1,2,3,4].map(i => <SkeletonCard key={i} lines={3} height="100px" />)}
