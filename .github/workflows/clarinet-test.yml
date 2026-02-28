@@ -1,0 +1,45 @@
+name: Clarinet Contract Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'contracts/**'
+      - 'tests/**'
+      - 'Clarinet.toml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - 'tests/**'
+
+jobs:
+  test:
+    name: Run Clarinet Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Clarinet
+        run: |
+          curl -fsSL https://install.clarinet.hiro.so | sh
+          echo "$HOME/.clarinet/bin" >> $GITHUB_PATH
+
+      - name: Verify Clarinet installation
+        run: clarinet --version
+
+      - name: Check contract syntax
+        run: clarinet check
+
+      - name: Run unit tests
+        run: clarinet test --coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clarinet-coverage
+          path: coverage/
+          retention-days: 7
