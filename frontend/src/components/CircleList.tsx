@@ -5,6 +5,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import CircleCard, { Circle } from "./CircleCard";
 import { SkeletonCard } from "./SkeletonCard";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 import {
   registerMember,
   createCircle,
@@ -60,6 +61,7 @@ export default function CircleList() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
