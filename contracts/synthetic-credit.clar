@@ -114,13 +114,36 @@
 )
 
 ;; ─── Transfer sCREDIT within the ecosystem ───────────────────────────────────
+;; Moves both the token balance AND the minted obligation from sender to
+;; recipient, keeping credit-account bookkeeping accurate.
 (define-public (transfer-scredit (amount uint) (recipient principal))
-  (let ((caller tx-sender))
+  (let (
+    (caller          tx-sender)
+    (sender-account  (unwrap! (map-get? credit-accounts { member: caller })
+                       ERR-ACCOUNT-NOT-FOUND))
+    (sender-minted   (get minted sender-account))
+    (recipient-acct  (default-to
+                       { minted: u0, credit-limit: u0, last-updated: u0 }
+                       (map-get? credit-accounts { member: recipient })))
+  )
     (asserts! (not (is-protocol-paused))                           ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)                                         ERR-ZERO-AMOUNT)
     (asserts! (contract-call? REGISTRY is-active-member recipient)  ERR-NOT-A-MEMBER)
     (asserts! (>= (ft-get-balance scredit caller) amount)           ERR-INSUFFICIENT-CREDIT)
+    ;; Transfer the fungible token
     (try! (ft-transfer? scredit amount caller recipient))
+    ;; Reduce sender's minted obligation
+    (map-set credit-accounts { member: caller }
+      (merge sender-account
+        { minted: (if (>= sender-minted amount)
+                    (- sender-minted amount)
+                    u0),
+          last-updated: block-height }))
+    ;; Increase recipient's minted obligation
+    (map-set credit-accounts { member: recipient }
+      (merge recipient-acct
+        { minted: (+ (get minted recipient-acct) amount),
+          last-updated: block-height }))
     (ok true)
   )
 )
