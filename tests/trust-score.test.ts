@@ -209,3 +209,41 @@ Clarinet.test({
     assertEquals(score <= 1000, true);
   },
 });
+
+Clarinet.test({
+  name: "reward-savings: uses its own cooldown independent of endorsement cooldown",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+
+    // First savings reward
+    const first = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-savings",
+        [types.principal(alice.address), types.uint(10)],
+        deployer.address
+      ),
+    ]);
+    first.receipts[0].result.expectOk();
+
+    // Advance just past the savings default cooldown (~144 blocks)
+    chain.mineEmptyBlockUntil(chain.blockHeight + 150);
+
+    // Second savings reward — should succeed because savings cooldown
+    // is 144 blocks, not the endorsement's 1008
+    const second = chain.mineBlock([
+      Tx.contractCall(
+        "trust-score",
+        "reward-savings",
+        [types.principal(alice.address), types.uint(10)],
+        deployer.address
+      ),
+    ]);
+    second.receipts[0].result.expectOk();
+  },
+});
