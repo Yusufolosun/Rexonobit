@@ -1,6 +1,12 @@
 // frontend/src/components/RoscaPanel.tsx
 // Rotating savings (Susu/Chit Fund): create, join, contribute, set order, payout
 
+/**
+ * RoscaPanel — ROSCA (Rotating Savings and Credit Association) interface.
+ * Manages circle creation, membership, contribution, payout ordering,
+ * and cycle management. On-chain Susu/Tontine/Chit-Fund mechanics.
+ */
+
 import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
