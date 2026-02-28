@@ -25,6 +25,7 @@
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
 (define-constant PROTOCOL-CFG .protocol-config)
+(define-constant ARBITRATION  .arbitration)
 
 ;; ─── Task status ─────────────────────────────────────────────────────────────
 (define-constant TASK-OPEN       u1)
@@ -208,23 +209,35 @@
 )
 
 ;; ─── Dispute a task ──────────────────────────────────────────────────────────
-(define-public (dispute-task (task-id uint))
+(define-public (dispute-task
+    (task-id  uint)
+    (reason   (string-utf8 512))
+    (evidence (string-utf8 512)))
   (let (
     (caller tx-sender)
     (task   (unwrap! (map-get? tasks { task-id: task-id }) ERR-TASK-NOT-FOUND))
+    (poster (get poster task))
+    (worker (unwrap! (get worker task) ERR-TASK-NOT-ASSIGNED))
+    ;; If the caller is the poster, the respondent is the worker; vice-versa
+    (respondent (if (is-eq caller poster) worker poster))
   )
     (asserts! (not (is-protocol-paused)) ERR-PROTOCOL-PAUSED)
     (asserts!
-      (or (is-eq caller (get poster task))
-          (is-eq (some caller) (get worker task)))
+      (or (is-eq caller poster) (is-eq caller worker))
       ERR-NOT-AUTHORIZED)
     (asserts!
       (or (is-eq (get status task) TASK-REVIEW)
           (is-eq (get status task) TASK-ASSIGNED))
       ERR-TASK-NOT-ASSIGNED)
-    (map-set tasks { task-id: task-id }
-      (merge task { status: TASK-DISPUTED }))
-    (ok task-id)
+    ;; Open a dispute in the arbitration contract (caller pays the arb fee)
+    (let (
+      (dispute-id (try! (contract-call? ARBITRATION open-dispute
+                          respondent (get circle-id task) reason evidence)))
+    )
+      (map-set tasks { task-id: task-id }
+        (merge task { status: TASK-DISPUTED, dispute-id: dispute-id }))
+      (ok dispute-id)
+    )
   )
 )
 
