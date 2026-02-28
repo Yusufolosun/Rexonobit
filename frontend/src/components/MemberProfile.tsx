@@ -12,6 +12,7 @@ import {
   getTotalTasks,
 } from '../lib/read';
 import { SkeletonCard } from './SkeletonCard';
+import { explorerAddressUrl } from '../lib/explorer';
 
 interface ActiveLoan {
   id: number;
@@ -159,7 +160,9 @@ export function MemberProfile() {
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-              {address.slice(0, 12)}...{address.slice(-6)}
+              <a href={explorerAddressUrl(address)} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline dotted' }}>
+                {address.slice(0, 12)}...{address.slice(-6)}
+              </a>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
               <span style={{ fontWeight: 700, fontSize: '1.125rem', color: tierColor }}>{tier}</span>
