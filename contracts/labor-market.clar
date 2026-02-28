@@ -247,6 +247,7 @@
     (caller tx-sender)
     (task   (unwrap! (map-get? tasks { task-id: task-id }) ERR-TASK-NOT-FOUND))
   )
+    (asserts! (not (is-protocol-paused)) ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq caller (get poster task))    ERR-NOT-AUTHORIZED)
     (asserts! (is-eq (get status task) TASK-OPEN)  ERR-TASK-NOT-OPEN)
     ;; Refund bounty to poster
