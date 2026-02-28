@@ -112,7 +112,7 @@
   )
 )
 
-;; ─── Vote (weight = trust score, capped at 20% of total) ─────────────────────
+;; ─── Vote (weight = trust score, capped at 20% of new total) ─────────────────
 (define-public (vote (proposal-id uint) (approve bool))
   (let (
     (caller   tx-sender)
@@ -122,14 +122,12 @@
     (max-weight-bps (default-to u2000
                      (match (contract-call? PROTOCOL-CFG get-param "governance-max-vote-weight-bps")
                        v (some v) none)))
-    ;; Cap weight at 20% of cumulative total-weight so far
+    ;; Cap weight at max-weight-bps of the projected total (existing + this vote)
     (total-so-far   (get total-weight proposal))
-    (uncapped-pct   (if (> total-so-far u0)
-                      (/ (* raw-score u10000) total-so-far)
-                      u10000))
-    (effective-weight (if (> uncapped-pct max-weight-bps)
-                        ;; Scale down to max
-                        (/ (* total-so-far max-weight-bps) u10000)
+    (projected-total (+ total-so-far raw-score))
+    (max-allowed     (/ (* projected-total max-weight-bps) u10000))
+    (effective-weight (if (> raw-score max-allowed)
+                        max-allowed
                         raw-score))
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)

@@ -77,7 +77,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-  name: "vote: member can vote on active proposal",
+  name: "vote: member can vote on active proposal and receives non-zero weight",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const { alice, bob } = setup(chain, accounts);
     chain.mineBlock([
@@ -86,7 +86,9 @@ Clarinet.test({
     const block = chain.mineBlock([
       Tx.contractCall("governance", "vote", [types.uint(1), types.bool(true)], bob.address),
     ]);
-    block.receipts[0].result.expectOk().expectBool(true);
+    // vote returns (ok effective-weight) — weight must be > 0
+    const weight = block.receipts[0].result.expectOk().expectUint;
+    assertEquals(weight !== 0, true);
   },
 });
 
