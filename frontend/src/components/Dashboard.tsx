@@ -90,8 +90,8 @@ export default function Dashboard() {
   }
 
   return (
-    <section id="dashboard" className="page-container">
-      <h2 className="section-title">Dashboard</h2>
+    <section id="dashboard" className="page-container" aria-labelledby="dashboard-title">
+      <h2 id="dashboard-title" className="section-title">Dashboard</h2>
 
       {loading && (
         <div className="grid-3" style={{ marginBottom: "1.5rem" }}>
