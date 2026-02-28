@@ -17,6 +17,7 @@ import { validateSTX, validatePositiveInt, validateBlockCount, validateMaxLength
 import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface RoscaData {
   id: number;
@@ -65,6 +66,7 @@ export default function RoscaPanel() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
