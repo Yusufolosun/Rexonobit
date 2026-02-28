@@ -1,7 +1,7 @@
 // frontend/src/components/CircleList.tsx
 // Browse all circles, register member, create circle, join/vouch
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import CircleCard, { Circle } from "./CircleCard";
 import { SkeletonCard } from "./SkeletonCard";
@@ -62,6 +62,15 @@ export default function CircleList() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
+
+  const activeCircles = useMemo(
+    () => circles.filter((c) => c.active !== false),
+    [circles]
+  );
+  const inactiveCircles = useMemo(
+    () => circles.filter((c) => c.active === false),
+    [circles]
+  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
