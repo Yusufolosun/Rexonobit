@@ -85,8 +85,8 @@ export default function LoanPanel() {
   const stx = (v: number) => (v / 1_000_000).toFixed(4);
 
   return (
-    <section id="loans" className="page-container">
-      <h2 className="section-title">Lending Pool</h2>
+    <section id="loans" className="page-container" aria-labelledby="loans-title">
+      <h2 id="loans-title" className="section-title">Lending Pool</h2>
       {loading && (
         <div className="grid-3" style={{ marginBottom: "1rem" }}>
           {[1,2,3].map(i => <SkeletonCard key={i} lines={2} height="80px" />)}
