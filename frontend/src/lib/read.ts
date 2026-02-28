@@ -250,6 +250,30 @@ export async function getRosca(id: number) {
   );
 }
 
+// ─── labor-market reads ───────────────────────────────────────────────────────
+
+export async function getTask(taskId: number) {
+  return readOnlyCall(
+    {
+      contractName: CONTRACT_NAMES.LABOR_MARKET,
+      functionName: "get-task",
+      args: [hexArg(uintCV(taskId))],
+    },
+    parseValue
+  );
+}
+
+export async function getTotalTasks(): Promise<number> {
+  return readOnlyCall(
+    {
+      contractName: CONTRACT_NAMES.LABOR_MARKET,
+      functionName: "get-total-tasks",
+      args: [],
+    },
+    (hex) => Number(parseValue(hex))
+  );
+}
+
 // ─── treasury reads ───────────────────────────────────────────────────────────
 
 export async function getTreasuryBalance(circleId: number): Promise<number> {
@@ -271,6 +295,41 @@ export async function getTreasuryProposal(proposalId: number) {
       args: [hexArg(uintCV(proposalId))],
     },
     parseValue
+  );
+}
+
+// ─── arbitration reads ────────────────────────────────────────────────────────
+
+export async function getGovernanceProposal(proposalId: number) {
+  return readOnlyCall(
+    {
+      contractName: CONTRACT_NAMES.GOVERNANCE,
+      functionName: "get-proposal",
+      args: [hexArg(uintCV(proposalId))],
+    },
+    parseValue
+  );
+}
+
+export async function getDispute(id: number) {
+  return readOnlyCall(
+    {
+      contractName: CONTRACT_NAMES.ARBITRATION,
+      functionName: "get-dispute",
+      args: [hexArg(uintCV(id))],
+    },
+    parseValue
+  );
+}
+
+export async function getTotalDisputes(): Promise<number> {
+  return readOnlyCall(
+    {
+      contractName: CONTRACT_NAMES.ARBITRATION,
+      functionName: "get-total-disputes",
+      args: [],
+    },
+    (hex) => Number(parseValue(hex))
   );
 }
 

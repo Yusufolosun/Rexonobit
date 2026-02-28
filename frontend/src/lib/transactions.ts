@@ -190,6 +190,10 @@ export async function joinRosca(roscaId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "join-rosca", [uintCV(roscaId)]);
 }
 
+export async function lockAndStart(roscaId: number): Promise<{ txid: string }> {
+  return callContract(CONTRACT_NAMES.ROSCA, "lock-and-start", [uintCV(roscaId)]);
+}
+
 export async function contribute(roscaId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "contribute", [uintCV(roscaId)]);
 }
@@ -262,6 +266,12 @@ export async function attestTask(
 
 export async function disputeTask(taskId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LABOR_MARKET, "dispute-task", [
+    uintCV(taskId),
+  ]);
+}
+
+export async function cancelTask(taskId: number): Promise<{ txid: string }> {
+  return callContract(CONTRACT_NAMES.LABOR_MARKET, "cancel-task", [
     uintCV(taskId),
   ]);
 }
@@ -342,6 +352,12 @@ export async function voteOnGovProposal(
 
 export async function executeGovProposal(proposalId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.GOVERNANCE, "execute-proposal", [
+    uintCV(proposalId),
+  ]);
+}
+
+export async function vetoGovProposal(proposalId: number): Promise<{ txid: string }> {
+  return callContract(CONTRACT_NAMES.GOVERNANCE, "veto", [
     uintCV(proposalId),
   ]);
 }
