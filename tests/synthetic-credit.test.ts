@@ -134,6 +134,79 @@ Clarinet.test({
 });
 
 Clarinet.test({
+  name: "transfer-scredit: minted obligation moves from sender to recipient",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    // Regression: previously transfer-scredit did not update credit-accounts,
+    // leaving the sender's minted unchanged and creating unbacked tokens for
+    // the recipient with no minted record.
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const bob = accounts.get("wallet_2")!;
+
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member",
+        [types.utf8("Alice")], alice.address),
+      Tx.contractCall("cooperative-registry", "register-member",
+        [types.utf8("Bob")], bob.address),
+    ]);
+
+    // Give Alice enough trust to mint sCREDIT
+    chain.mineBlock([
+      Tx.contractCall("trust-score", "initialize-score",
+        [types.principal(alice.address)], deployer.address),
+      Tx.contractCall("trust-score", "reward-savings",
+        [types.principal(alice.address), types.uint(400)], deployer.address),
+      Tx.contractCall("trust-score", "reward-loan-repay",
+        [types.principal(alice.address), types.uint(300)], deployer.address),
+    ]);
+
+    // Alice deposits and locks savings as collateral
+    chain.mineBlock([
+      Tx.contractCall("savings-vault", "deposit",
+        [types.uint(20_000_000)], alice.address),
+      Tx.contractCall("savings-vault", "lock-savings",
+        [types.uint(10_000_000), types.uint(2016)], alice.address),
+    ]);
+
+    // Alice mints 2000 sCREDIT
+    const mintBlock = chain.mineBlock([
+      Tx.contractCall("synthetic-credit", "mint-scredit",
+        [types.uint(2000)], alice.address),
+    ]);
+    mintBlock.receipts[0].result.expectOk().expectUint(2000);
+
+    // Verify Alice's minted = 2000 before transfer
+    const aliceBefore = chain.callReadOnlyFn(
+      "synthetic-credit", "get-credit-account",
+      [types.principal(alice.address)], deployer.address
+    );
+    assertEquals(aliceBefore.result.includes("minted: u2000"), true);
+
+    // Alice transfers 500 to Bob
+    const txBlock = chain.mineBlock([
+      Tx.contractCall("synthetic-credit", "transfer-scredit",
+        [types.uint(500), types.principal(bob.address)], alice.address),
+    ]);
+    txBlock.receipts[0].result.expectOk().expectBool(true);
+
+    // Alice's minted should now be 1500 (2000 - 500)
+    const aliceAfter = chain.callReadOnlyFn(
+      "synthetic-credit", "get-credit-account",
+      [types.principal(alice.address)], deployer.address
+    );
+    assertEquals(aliceAfter.result.includes("minted: u1500"), true);
+
+    // Bob's minted should now be 500
+    const bobAfter = chain.callReadOnlyFn(
+      "synthetic-credit", "get-credit-account",
+      [types.principal(bob.address)], deployer.address
+    );
+    assertEquals(bobAfter.result.includes("minted: u500"), true);
+  },
+});
+
+Clarinet.test({
   name: "mint: minting zero credit is rejected",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const { alice } = setup(chain, accounts);
