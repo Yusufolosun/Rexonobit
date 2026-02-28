@@ -6,11 +6,20 @@ import {
   getStreakStatus,
 } from '../lib/read';
 
+/**
+ * @module useVault
+ * @description React hook for REXONOBIT savings vault state.
+ * Fetches balance, locked balance, lock expiry height, and streak count
+ * for a given Stacks address. Exposes a `refresh` callback for manual
+ * or focus-triggered data invalidation.
+ */
+
 export interface VaultState {
   balance: number;
   lockedBalance: number;
   lockedUntil: number;
-  streakActive: boolean;
+  /** Streak count in saved cycles (0 if no active streak) */
+  streak: number;
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -20,7 +29,7 @@ export function useVault(address: string | null): VaultState {
   const [balance, setBalance] = useState(0);
   const [lockedBalance, setLockedBalance] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(0);
-  const [streakActive, setStreakActive] = useState(false);
+  const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +38,7 @@ export function useVault(address: string | null): VaultState {
     setLoading(true);
     setError(null);
     try {
-      const [bal, locked, until, streak] = await Promise.all([
+      const [bal, locked, until, streakVal] = await Promise.all([
         getVaultBalance(address),
         getLockedBalance(address),
         getLockedUntil(address),
@@ -38,7 +47,7 @@ export function useVault(address: string | null): VaultState {
       setBalance(bal);
       setLockedBalance(locked);
       setLockedUntil(until);
-      setStreakActive(streak);
+      setStreak(Number(streakVal));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to fetch vault data');
     } finally {
@@ -50,5 +59,6 @@ export function useVault(address: string | null): VaultState {
     fetch();
   }, [fetch]);
 
-  return { balance, lockedBalance, lockedUntil, streakActive, loading, error, refresh: fetch };
+  return { balance, lockedBalance, lockedUntil, streak, loading, error, refresh: fetch };
 }
+
