@@ -1,6 +1,12 @@
 // frontend/src/components/Dashboard.tsx
 // Protocol overview: member stats, trust score, vault balance, active loans
 
+/**
+ * Dashboard — protocol overview for the connected member.
+ * Aggregates vault balance, trust score tier, active loan status, and
+ * ROSCA membership into a single statscard grid.
+ */
+
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
