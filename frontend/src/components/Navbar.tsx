@@ -51,8 +51,8 @@ export default function Navbar() {
           ◈ REXONOBIT
         </span>
 
-        {/* Links */}
-        <div style={{ display: "flex", gap: "0.1rem", flexWrap: "wrap" }}>
+        {/* Links — hidden on narrow screens via overflow:hidden truncation */}
+        <div style={{ display: "flex", gap: "0.1rem", flexWrap: "wrap", overflow: "hidden", maxHeight: "2rem" }}>
           {LINKS.map((l) => (
             <a
               key={l.href}
