@@ -15,6 +15,7 @@
 (define-constant ERR-BELOW-MIN-DEPOSIT   (err u207))
 (define-constant ERR-PROTOCOL-PAUSED     (err u208))
 (define-constant ERR-ALREADY-INITIALIZED (err u209))
+(define-constant ERR-LOCK-SHORTENING    (err u210))
 
 ;; ─── Contract references ─────────────────────────────────────────────────────
 (define-constant REGISTRY     .cooperative-registry)
@@ -136,6 +137,9 @@
     (asserts! (> amount u0)              ERR-ZERO-AMOUNT)
     (asserts! (>= amount min-dep)        ERR-BELOW-MIN-DEPOSIT)
     (asserts! (>= lock-blocks min-lock)  ERR-LOCK-TOO-SHORT)
+    ;; New lock must not shorten an existing lock period
+    (asserts! (>= (+ block-height lock-blocks) (get lock-until vault))
+              ERR-LOCK-SHORTENING)
     (try! (stx-transfer? amount caller (as-contract tx-sender)))
     (let (
       (unlock-at    (+ block-height lock-blocks))
