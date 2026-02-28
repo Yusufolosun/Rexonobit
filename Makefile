@@ -83,4 +83,10 @@ stacks-info: ## Print current Stacks network and Hiro API URL
 
 open-docs: ## Open docs/README in the default browser
 	@echo "Opening docs/README.md ..."
-	@start docs/README.md 2>/dev/null || xdg-open docs/README.md 2>/dev/null || open docs/README.md
+	@start docs/README.md 2>/dev/null || xdg-open docs/README.md 2>/dev/null
+
+format: ## Run Prettier on frontend/src
+	cd frontend && npx prettier --write "src/**/*.{ts,tsx,css}" --log-level warn
+
+check-deps: ## Audit npm dependencies in frontend for known vulnerabilities
+	cd frontend && npm audit --audit-level=moderate || open docs/README.md
