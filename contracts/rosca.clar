@@ -221,11 +221,18 @@
 ;; ─── Set payout order (creator calls once before start, post all-members-locked) ──
 (define-public (set-payout-order (rosca-id uint) (order (list 20 principal)))
   (let (
-    (caller tx-sender)
-    (rosca  (unwrap! (map-get? roscas { id: rosca-id }) ERR-ROSCA-NOT-FOUND))
+    (caller     tx-sender)
+    (rosca      (unwrap! (map-get? roscas { id: rosca-id }) ERR-ROSCA-NOT-FOUND))
+    (validation (fold check-is-rosca-member order { rosca-id: rosca-id, valid: true }))
   )
     (asserts! (is-eq caller (get creator rosca)) ERR-NOT-AUTHORIZED)
     (asserts! (is-eq (get status rosca) ROSCA-PENDING) ERR-ROSCA-STARTED)
+    ;; Order list length must match target member count
+    (asserts! (is-eq (len order) (get member-count rosca)) ERR-INVALID-SIZE)
+    ;; All members must have actually joined before we can start
+    (asserts! (is-eq (get current-members rosca) (get member-count rosca)) ERR-ROSCA-FULL)
+    ;; Every principal in the list must be a registered ROSCA member
+    (asserts! (get valid validation) ERR-NOT-IN-ROSCA)
     (map-set roscas { id: rosca-id }
       (merge rosca
         { payout-order: order,
@@ -255,4 +262,17 @@
 ;; ─── Internal ────────────────────────────────────────────────────────────────
 (define-private (is-protocol-paused)
   (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+)
+
+;; Fold helper: verify each principal in payout order is a ROSCA member.
+;; Returns true only if every entry passes the membership check.
+(define-private (check-is-rosca-member
+    (entry principal)
+    (acc  { rosca-id: uint, valid: bool }))
+  (if (get valid acc)
+    { rosca-id: (get rosca-id acc),
+      valid: (is-some (map-get? rosca-members
+               { rosca-id: (get rosca-id acc), member: entry })) }
+    acc
+  )
 )
