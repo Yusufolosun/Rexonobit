@@ -138,6 +138,8 @@ export default function LoanPanel() {
           </div>
           <button
             className="btn-secondary"
+            aria-busy={txPending}
+            aria-label="Fund lending pool"
             disabled={txPending || !fundCircle || !fundAmt}
             onClick={() =>
               handle(
@@ -166,6 +168,8 @@ export default function LoanPanel() {
           </div>
           <button
             className="btn-primary"
+            aria-busy={txPending}
+            aria-label="Request loan from pool"
             disabled={txPending || !reqCircle || !reqAmount}
             onClick={() =>
               handle(
@@ -191,6 +195,8 @@ export default function LoanPanel() {
           </div>
           <button
             className="btn-primary"
+            aria-busy={txPending}
+            aria-label="Repay loan"
             disabled={txPending || !repayLoanId || !repayAmt}
             onClick={() =>
               handle(
@@ -215,6 +221,8 @@ export default function LoanPanel() {
           </div>
           <button
             className="btn-secondary"
+            aria-busy={txPending}
+            aria-label="Liquidate defaulted loan"
             disabled={txPending || !liqLoanId}
             onClick={() => handle(() => liquidateDefaulter(parseInt(liqLoanId)), "Liquidation submitted")}
           >
