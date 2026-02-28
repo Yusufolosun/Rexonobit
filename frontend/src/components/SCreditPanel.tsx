@@ -8,6 +8,7 @@ import { getSCreditBalance, getCreditLimit, getTrustScore, getLockedBalance } fr
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePrincipal } from "../lib/validators";
 import { SkeletonCard } from "./SkeletonCard";
+import { useToast } from "../context/ToastContext";
 
 interface CreditState {
   balance: number;
@@ -23,8 +24,7 @@ export default function SCreditPanel() {
   const [state, setState] = useState<CreditState | null>(null);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // Forms with validation
   const mintAmt = useFormField("", validateSTX);
@@ -62,14 +62,12 @@ export default function SCreditPanel() {
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
-    setError(null);
-    setSuccess(null);
     try {
       const res = await fn();
-      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      toastSuccess(msg, res.txid);
       setTimeout(refresh, 4000);
     } catch (e) {
-      setError(String(e));
+      toastError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -96,8 +94,6 @@ export default function SCreditPanel() {
         Mint sCREDIT against locked savings. Credit limit = locked STX × 50%. Requires trust score ≥ 700.
       </p>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
       {loading && (
         <div className="grid-3" style={{ marginBottom: "2rem" }}>
           {[1, 2, 3].map((i) => <SkeletonCard key={i} lines={3} height="90px" />)}
