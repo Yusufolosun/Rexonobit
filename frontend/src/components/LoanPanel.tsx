@@ -10,6 +10,7 @@ import { validateSTX, validatePositiveInt } from "../lib/validators";
 import { FormInput } from "./FormInput";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface Loan {
   id: number;
@@ -60,6 +61,7 @@ export default function LoanPanel() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
