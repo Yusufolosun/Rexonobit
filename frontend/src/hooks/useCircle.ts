@@ -1,3 +1,9 @@
+/**
+ * @module useCircle
+ * @description React hook for REXONOBIT cooperative-registry circle data.
+ * Fetches circle info for a given circle ID from the cooperative-registry
+ * contract.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { getCircle } from '../lib/read';
 
