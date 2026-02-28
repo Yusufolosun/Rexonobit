@@ -146,9 +146,13 @@ export function MemberProfile() {
   const tierColor = TIER_COLOR[tier];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
+      role="region"
+      aria-label={`Member profile for ${address}`}
+    >
       {/* Identity card */}
-      <div className="card" style={{ borderTop: `3px solid ${tierColor}` }}>
+      <div className="card" style={{ borderTop: `3px solid ${tierColor}` }} role="group" aria-label="Identity and tier">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           <div style={{
             width: '3rem', height: '3rem', borderRadius: '50%',
