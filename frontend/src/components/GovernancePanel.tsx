@@ -1,6 +1,12 @@
 // frontend/src/components/GovernancePanel.tsx
 // Trust-weighted governance: propose, vote, execute, veto
 
+/**
+ * GovernancePanel — on-chain governance interface.
+ * Supports proposal creation (parameter changes, treasury spends, policy
+ * updates, member expulsion), trust-weighted voting, execution, and veto.
+ */
+
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
