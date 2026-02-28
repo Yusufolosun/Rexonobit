@@ -50,8 +50,8 @@ export default function SCreditPanel() {
   const stx = (v: number) => (v / 1_000_000).toFixed(4);
 
   return (
-    <section id="scredit" className="page-container">
-      <h2 className="section-title">sCREDIT — Synthetic Credit</h2>
+    <section id="scredit" className="page-container" aria-labelledby="scredit-title">
+      <h2 id="scredit-title" className="section-title">sCREDIT — Synthetic Credit</h2>
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         Mint sCREDIT against locked savings. Credit limit = locked STX × 50%. Requires trust score ≥ 700.
       </p>
