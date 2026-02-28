@@ -14,6 +14,7 @@ import { useFormField } from "../hooks/useFormField";
 import { validatePrincipal, validatePositiveInt, validateMaxLength } from "../lib/validators";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface Dispute {
   id: number;
@@ -69,6 +70,7 @@ export default function ArbitrationPanel() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
