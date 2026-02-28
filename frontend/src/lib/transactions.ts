@@ -1,18 +1,17 @@
 // frontend/src/lib/transactions.ts
-// Transaction builders for every contract using @stacks/transactions
+// Transaction builders for every contract using @stacks/connect
 
 /**
  * @module transactions
  * @description `openContractCall` wrappers for all 12 REXONOBIT contracts.
- * Each function constructs the appropriate Clarity arguments, invokes a
- * Hiro Wallet signing flow via `@stacks/connect`, and returns the resulting
- * `{ txid }` on success. Never broadcasts a transaction without explicit
- * user approval in the wallet extension.
+ * Each function constructs the appropriate Clarity arguments, opens the
+ * Stacks wallet popup for user approval via `@stacks/connect`, and returns
+ * the resulting `{ txid }` on success. Never signs or broadcasts a
+ * transaction without explicit user confirmation in the wallet extension.
  */
 
+import { openContractCall } from "@stacks/connect";
 import {
-  makeContractCall,
-  broadcastTransaction,
   AnchorMode,
   PostConditionMode,
   uintCV,
@@ -24,16 +23,10 @@ import {
   noneCV,
   listCV,
   type ClarityValue,
-  type StacksTransactionWire,
 } from "@stacks/transactions";
 import { network, DEPLOYER_ADDRESS, CONTRACT_NAMES } from "./network";
-import { userSession } from "./wallet";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getSenderKey(): string {
-  return userSession.loadUserData().appPrivateKey ?? "";
-}
 
 async function callContract(
   contractName: string,
@@ -41,23 +34,24 @@ async function callContract(
   functionArgs: ClarityValue[],
   postConditions: never[] = []
 ): Promise<{ txid: string }> {
-  const txOptions = {
-    contractAddress: DEPLOYER_ADDRESS,
-    contractName,
-    functionName,
-    functionArgs,
-    senderKey: getSenderKey(),
-    network,
-    anchorMode: AnchorMode.Any,
-    postConditionMode: PostConditionMode.Allow,
-    postConditions,
-  };
-  const tx: StacksTransactionWire = await makeContractCall(txOptions);
-  const result = await broadcastTransaction({ transaction: tx, network });
-  if ("error" in result) {
-    throw new Error(`Broadcast failed: ${result.error} — ${result.reason}`);
-  }
-  return { txid: result.txid };
+  return new Promise((resolve, reject) => {
+    openContractCall({
+      contractAddress: DEPLOYER_ADDRESS,
+      contractName,
+      functionName,
+      functionArgs,
+      network,
+      anchorMode: AnchorMode.Any,
+      postConditionMode: PostConditionMode.Allow,
+      postConditions,
+      onFinish: (data) => {
+        resolve({ txid: data.txId });
+      },
+      onCancel: () => {
+        reject(new Error("Transaction was cancelled by user"));
+      },
+    });
+  });
 }
 
 // ─── cooperative-registry ─────────────────────────────────────────────────────
