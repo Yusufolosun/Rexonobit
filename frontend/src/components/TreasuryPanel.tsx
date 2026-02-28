@@ -16,6 +16,7 @@ import {
 } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validatePrincipal, validateMaxLength } from "../lib/validators";
+import { SkeletonCard } from "./SkeletonCard";
 
 interface Proposal {
   id: number;
@@ -123,7 +124,11 @@ export default function TreasuryPanel() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
-      {loading && <div style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" /> Loading…</div>}
+      {loading && (
+        <div className="grid-3" style={{ marginBottom: "1rem" }}>
+          {[1,2,3].map(i => <SkeletonCard key={i} lines={2} height="80px" />)}
+        </div>
+      )}
 
       {/* Balances */}
       {balances.length > 0 && (
