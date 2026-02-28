@@ -10,6 +10,8 @@ import {
   vetoGovernanceProposal,
 } from "../lib/transactions";
 import { getGovernanceProposal } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validateRequired, validateMaxLength, validatePositiveInt } from "../lib/validators";
 
 interface GovProposal {
   id: number;
@@ -41,15 +43,15 @@ export default function GovernancePanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Propose form
+  // Propose form with validation
   const [propType, setPropType] = useState("PARAM-CHANGE");
-  const [propTitle, setPropTitle] = useState("");
-  const [propDesc, setPropDesc] = useState("");
-  const [propParam, setPropParam] = useState("");
-  const [propValue, setPropValue] = useState("");
+  const propTitle = useFormField("", (v) => validateMaxLength(v, 80, "Title"));
+  const propDesc = useFormField("", (v) => validateMaxLength(v, 400, "Description"));
+  const propParam = useFormField("", (v) => validateRequired(v, "Parameter key"));
+  const propValue = useFormField("", (v) => validatePositiveInt(v, "Parameter value"));
 
   // Vote / execute / veto
-  const [actId, setActId] = useState("");
+  const actId = useFormField("", (v) => validatePositiveInt(v, "Proposal ID"));
 
   const refresh = useCallback(async () => {
     if (!address) return;
