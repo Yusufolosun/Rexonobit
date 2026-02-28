@@ -47,6 +47,24 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.3.0] — Utility hooks and lib utilities
+
+### Added
+- `lib/format.ts` — `formatMicroSTX`, `formatMicroSTXCompact`, `truncateAddress`, `formatBlockHeight`, `formatTimestamp`, `formatPercent`, `formatCount`
+- `lib/math.ts` — `toMicroSTX`, `fromMicroSTX`, `calcSimpleInterest`, `calcRepaymentTotal`, `calcUtilization`, `calcTrustContribution`, `sum`, `clamp`
+- `useDebounce` hook — delays state update by a configurable quiet period
+- `useCopyToClipboard` hook — clipboard write with transient `copied` state
+- `useMediaQuery` hook — reactive CSS `matchMedia` listener
+- `useLocalStorage` hook — JSON-serialised `localStorage` state
+- `useToggle` hook — boolean with `toggle`, `setTrue`, `setFalse` methods
+- `usePrevious` hook — returns the previous render value via a ref
+- `usePagination` hook — client-side array pagination with page controls
+- `useInterval` hook — declarative `setInterval` with null-pause support
+- Reference docs under `docs/hooks/` for all 8 new hooks
+- Reference docs under `docs/lib/` for `format.md` and `math.md`
+
+---
+
 ## [0.4.0] — TypeScript strictness and accessibility audit
 
 ### Changed
