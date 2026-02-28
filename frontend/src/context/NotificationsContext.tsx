@@ -1,7 +1,7 @@
 // frontend/src/context/NotificationsContext.tsx
 // Global notification state: add, dismiss, dismiss-all
 
-import React, {
+import {
   createContext,
   useCallback,
   useContext,

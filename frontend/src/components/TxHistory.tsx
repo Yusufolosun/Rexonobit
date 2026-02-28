@@ -3,7 +3,6 @@ import { useWallet } from '../context/WalletContext';
 import { STACKS_API_URL } from '../lib/network';
 import { explorerTxUrl } from '../lib/explorer';
 import { SkeletonRow } from './SkeletonCard';
-import { useWindowFocus } from '../hooks/useWindowFocus';
 
 interface TxRecord {
   txId: string;

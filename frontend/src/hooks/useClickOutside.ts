@@ -1,4 +1,4 @@
-import { useEffect, RefObject } from "react";
+import { useEffect, type RefObject } from "react";
 
 // ---------------------------------------------------------------------------
 // useClickOutside — call a handler when the user clicks outside an element

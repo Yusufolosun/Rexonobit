@@ -4,7 +4,7 @@
  * Provides value, onChange, onBlur, error state, and a validate() trigger.
  * Pair with FormInput component for consistent form UX.
  */
-import { useState, useCallback, ChangeEvent } from 'react';
+import { useState, useCallback, type ChangeEvent } from 'react';
 import type { ValidationResult } from '../lib/validators';
 
 export type ValidateFn = (value: string) => ValidationResult;

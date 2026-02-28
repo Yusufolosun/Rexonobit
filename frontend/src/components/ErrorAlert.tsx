@@ -12,7 +12,7 @@
  * ```
  */
 
-import React from "react";
+// No default React import needed — JSX transform handles it
 
 interface ErrorAlertProps {
   /** Error message to display. Pass null or undefined to render nothing. */

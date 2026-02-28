@@ -36,14 +36,6 @@ interface ActiveTask {
   status: number;
 }
 
-const TIER_LABELS: Record<number, string> = {
-  900: 'Platinum',
-  700: 'Gold',
-  500: 'Silver',
-  300: 'Bronze',
-  0:   'Starter',
-};
-
 function getTier(score: number) {
   if (score >= 900) return 'Platinum';
   if (score >= 700) return 'Gold';
@@ -76,9 +68,9 @@ export function MemberProfile() {
     if (!address) return;
     setLoading(true);
     try {
-      const member = await getMember(address);
+      const member = await getMember(address) as Record<string, unknown> | null;
       if (member) {
-        setMemberData({ circleId: member['circle-id'] ?? 0, reputation: member.reputation ?? 0 });
+        setMemberData({ circleId: Number(member['circle-id'] ?? 0), reputation: Number(member.reputation ?? 0) });
       }
 
       const [totalCircles, totalTasks] = await Promise.all([
@@ -90,9 +82,9 @@ export function MemberProfile() {
       const loans: ActiveLoan[] = [];
       for (let i = 1; i <= Math.min(totalTasks, 50); i++) {
         try {
-          const l = await getLoan(i);
+          const l = await getLoan(i) as Record<string, unknown> | null;
           if (l && l.borrower === address && (l.status === 1 || l.status === 2)) {
-            loans.push({ id: i, amount: l.amount ?? 0, repaid: l.repaid ?? 0, status: l.status ?? 0 });
+            loans.push({ id: i, amount: Number(l.amount ?? 0), repaid: Number(l.repaid ?? 0), status: Number(l.status ?? 0) });
           }
         } catch { /* skip */ }
       }
@@ -102,14 +94,14 @@ export function MemberProfile() {
       const roscas: ActiveRosca[] = [];
       for (let i = 1; i <= Math.min(totalCircles * 2, 30); i++) {
         try {
-          const r = await getRosca(i);
+          const r = await getRosca(i) as Record<string, unknown> | null;
           if (r && r.status === 1) {
             roscas.push({
               id: i,
-              circleId: r['circle-id'] ?? 0,
-              currentCycle: r['current-cycle'] ?? 0,
-              totalCycles: r['total-cycles'] ?? 0,
-              status: r.status ?? 0,
+              circleId: Number(r['circle-id'] ?? 0),
+              currentCycle: Number(r['current-cycle'] ?? 0),
+              totalCycles: Number(r['total-cycles'] ?? 0),
+              status: Number(r.status ?? 0),
             });
           }
         } catch { /* skip */ }
@@ -120,9 +112,9 @@ export function MemberProfile() {
       const tasks: ActiveTask[] = [];
       for (let i = totalTasks; i >= Math.max(1, totalTasks - 40); i--) {
         try {
-          const t = await getTask(i);
-          if (t && t.worker === address && t.status < 3) {
-            tasks.push({ id: i, title: t.title ?? `Task #${i}`, bounty: t.bounty ?? 0, status: t.status ?? 0 });
+          const t = await getTask(i) as Record<string, unknown> | null;
+          if (t && t.worker === address && Number(t.status ?? 0) < 3) {
+            tasks.push({ id: i, title: (t.title as string) ?? `Task #${i}`, bounty: Number(t.bounty ?? 0), status: Number(t.status ?? 0) });
           }
         } catch { /* skip */ }
       }

@@ -1,4 +1,3 @@
-import React from "react";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import { truncateAddress } from "../lib/format";
 
@@ -37,7 +36,7 @@ export function AddressCard({
   showTitle = true,
   className = "",
 }: AddressCardProps) {
-  const { copy, copied } = useCopyToClipboard();
+  const { copyToClipboard, copied } = useCopyToClipboard();
   const truncated = truncateAddress(address, startChars, endChars);
 
   return (
@@ -78,7 +77,7 @@ export function AddressCard({
         <button
           type="button"
           aria-label={copied ? "Address copied" : `Copy address ${truncated}`}
-          onClick={() => copy(address)}
+          onClick={() => copyToClipboard(address)}
           style={{
             background: "none",
             border: "none",
