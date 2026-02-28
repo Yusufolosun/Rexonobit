@@ -10,6 +10,8 @@ import {
   closeDispute,
 } from "../lib/transactions";
 import { getDispute } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validatePrincipal, validatePositiveInt, validateMaxLength } from "../lib/validators";
 
 interface Dispute {
   id: number;
@@ -39,15 +41,15 @@ export default function ArbitrationPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Open dispute form
-  const [respondent, setRespondent] = useState("");
-  const [circleId, setCircleId] = useState("");
-  const [disputeDesc, setDisputeDesc] = useState("");
+  // Open dispute form with validation
+  const respondent = useFormField("", validatePrincipal);
+  const circleId = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
+  const disputeDesc = useFormField("", (v) => validateMaxLength(v, 300, "Description"));
 
-  // Actions
-  const [actDisputeId, setActDisputeId] = useState("");
+  // Actions with validation
+  const actDisputeId = useFormField("", (v) => validatePositiveInt(v, "Dispute ID"));
   const [verdictChoice, setVerdictChoice] = useState("1");
-  const [verdictReason, setVerdictReason] = useState("");
+  const verdictReason = useFormField("", (v) => validateMaxLength(v, 200, "Reasoning"));
 
   const refresh = useCallback(async () => {
     if (!address) return;
