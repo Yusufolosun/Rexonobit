@@ -122,3 +122,60 @@ Clarinet.test({
     result.result.expectUint(0);
   },
 });
+
+Clarinet.test({
+  name: "deposit: zero amount is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("savings-vault", "deposit", [types.uint(0)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "withdraw: cannot withdraw more than deposited",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("savings-vault", "deposit", [types.uint(1_000_000)], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("savings-vault", "withdraw", [types.uint(5_000_000)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "deposit: multiple sequential deposits accumulate balance",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { deployer, alice } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("savings-vault", "deposit", [types.uint(1_000_000)], alice.address),
+      Tx.contractCall("savings-vault", "deposit", [types.uint(2_000_000)], alice.address),
+    ]);
+    const result = chain.callReadOnlyFn(
+      "savings-vault",
+      "get-vault-balance",
+      [types.principal(alice.address)],
+      deployer.address
+    );
+    result.result.expectUint(3_000_000);
+  },
+});
+
+Clarinet.test({
+  name: "lock-savings: cannot lock more than available balance",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("savings-vault", "deposit", [types.uint(1_000_000)], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("savings-vault", "lock-savings", [types.uint(5_000_000), types.uint(1000)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
