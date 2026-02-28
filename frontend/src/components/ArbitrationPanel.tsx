@@ -1,6 +1,13 @@
 // frontend/src/components/ArbitrationPanel.tsx
 // Decentralized dispute resolution: open dispute, join panel, submit verdict, close
 
+/**
+ * ArbitrationPanel — dispute resolution interface.
+ * Allows members to open disputes, join arbitration panels, submit
+ * verdicts, and close resolved disputes. Integrates with trust-score
+ * for penalty application on losing parties.
+ */
+
 import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
