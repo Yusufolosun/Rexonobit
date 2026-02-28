@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getTrustScoreFull } from '../lib/read';
+import type { TrustTier } from '../lib/types';
 
 export interface TrustScoreBreakdown {
   total: number;
@@ -14,6 +15,8 @@ export interface TrustScoreBreakdown {
   endorsement: number;
   labor: number;
   penalty: number;
+  /** Derived tier from total score. */
+  tier: TrustTier;
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -54,5 +57,10 @@ export function useTrustScore(address: string | null): TrustScoreBreakdown {
     fetch();
   }, [fetch]);
 
-  return { total, savings, loan, endorsement, labor, penalty, loading, error, refresh: fetch };
-}
+  const tier: TrustTier =
+    total >= 900 ? "platinum" :
+    total >= 700 ? "gold" :
+    total >= 500 ? "silver" :
+    total >= 300 ? "bronze" : "none";
+
+  return { total, savings, loan, endorsement, labor, penalty, tier, loading, error, refresh: fetch };
