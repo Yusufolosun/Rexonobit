@@ -113,3 +113,42 @@ Clarinet.test({
     }
   },
 });
+
+Clarinet.test({
+  name: "request-loan: zero-amount loan is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setupWithCircle(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("lending-pool", "fund-pool", [types.uint(1), types.uint(50_000_000)], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("lending-pool", "request-loan", [types.uint(1), types.uint(0)], bob.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "fund-pool: non-existent pool funding is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setupWithCircle(chain, accounts);
+    const block = chain.mineBlock([
+      Tx.contractCall("lending-pool", "fund-pool", [types.uint(999), types.uint(1_000_000)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "request-loan: borrowing more than pool balance is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setupWithCircle(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("lending-pool", "fund-pool", [types.uint(1), types.uint(1_000_000)], alice.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("lending-pool", "request-loan", [types.uint(1), types.uint(100_000_000)], bob.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
