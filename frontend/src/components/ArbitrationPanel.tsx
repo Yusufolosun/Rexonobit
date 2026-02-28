@@ -22,6 +22,8 @@ import { validatePrincipal, validatePositiveInt, validateMaxLength } from "../li
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 interface Dispute {
   id: number;
@@ -48,7 +50,8 @@ export default function ArbitrationPanel() {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   // Open dispute form with validation
   const respondent = useFormField("", validatePrincipal);
@@ -95,9 +98,10 @@ export default function ArbitrationPanel() {
     try {
       const res = await fn();
       toastSuccess(msg, res.txid);
+      clearError();
       setTimeout(refresh, 4000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -125,6 +129,7 @@ export default function ArbitrationPanel() {
   return (
     <section id="arbitration" className="page-container" aria-labelledby="arbitration-title">
       <h2 id="arbitration-title" className="section-title">Arbitration</h2>
+      <ErrorAlert error={contractError} onDismiss={clearError} />
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         3-member inter-circle panel resolves disputes. Panelists must have trust ≥ 400 and not be from the same circle.
       </p>
