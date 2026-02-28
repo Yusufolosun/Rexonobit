@@ -1,7 +1,7 @@
 # REXONOBIT Makefile
 # Usage: make <target>
 
-.PHONY: dev build lint typecheck test deploy-testnet deploy-mainnet devnet-start clean help
+.PHONY: dev build lint typecheck test test-integration deploy-testnet deploy-mainnet devnet-start clean help
 
 help: ## Show this help message
 	@echo "REXONOBIT — Stacks Micro-Economy Protocol"
@@ -39,6 +39,9 @@ check: ## Syntax-check all Clarity contracts
 
 test: ## Run all Clarinet unit tests
 	clarinet test
+
+test-integration: ## Run only integration test files
+	clarinet test tests/governance-integration.test.ts tests/synthetic-credit-integration.test.ts tests/trust-score-integration.test.ts tests/treasury-integration.test.ts tests/labor-market-integration.test.ts tests/lending-pool-integration.test.ts
 
 test-watch: ## Run Clarinet tests in watch mode
 	clarinet test --watch
