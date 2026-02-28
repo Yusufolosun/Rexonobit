@@ -12,6 +12,8 @@ import {
 import { getDispute } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validatePrincipal, validatePositiveInt, validateMaxLength } from "../lib/validators";
+import { SkeletonCard } from "./SkeletonCard";
+import { useToast } from "../context/ToastContext";
 
 interface Dispute {
   id: number;
@@ -38,8 +40,7 @@ export default function ArbitrationPanel() {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // Open dispute form with validation
   const respondent = useFormField("", validatePrincipal);
@@ -71,14 +72,12 @@ export default function ArbitrationPanel() {
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
-    setError(null);
-    setSuccess(null);
     try {
       const res = await fn();
-      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      toastSuccess(msg, res.txid);
       setTimeout(refresh, 4000);
     } catch (e) {
-      setError(String(e));
+      toastError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -110,10 +109,7 @@ export default function ArbitrationPanel() {
         3-member inter-circle panel resolves disputes. Panelists must have trust ≥ 400 and not be from the same circle.
       </p>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
-      {/* Open Dispute */}
+      {/* Open Dispute */}}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginBottom: "1rem" }}>Open a Dispute</h3>
         <p className="text-muted text-sm" style={{ marginBottom: "0.75rem" }}>
