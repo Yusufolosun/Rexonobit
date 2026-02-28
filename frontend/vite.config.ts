@@ -4,6 +4,14 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // Pre-bundle Stacks SDK packages to avoid re-optimisation on first load
+  optimizeDeps: {
+    include: [
+      '@stacks/connect',
+      '@stacks/transactions',
+      '@stacks/network',
+    ],
+  },
   build: {
     rollupOptions: {
       output: {
