@@ -1,3 +1,9 @@
+/**
+ * @module useRosca
+ * @description React hook for ROSCA (Rotating Savings and Credit Association)
+ * circle data. Fetches circle info and membership status for a given Stacks
+ * address via the rosca contract.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { getRosca } from '../lib/read';
 
