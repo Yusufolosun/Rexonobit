@@ -12,6 +12,9 @@ import {
   setPayoutOrder,
 } from "../lib/transactions";
 import { getRosca } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validateSTX, validatePositiveInt, validateBlockCount, validateMaxLength, validatePrincipalList } from "../lib/validators";
+import { FormInput, FormTextarea } from "./FormInput";
 
 interface RoscaData {
   id: number;
@@ -34,15 +37,15 @@ export default function RoscaPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Create form
-  const [rName, setRName] = useState("");
-  const [rContrib, setRContrib] = useState("");
-  const [rCycle, setRCycle] = useState("1008");
-  const [rMax, setRMax] = useState("5");
+  // Create form with validation
+  const rName = useFormField("", (v) => validateMaxLength(v, 50, "Name"));
+  const rContrib = useFormField("", validateSTX);
+  const rCycle = useFormField("1008", (v) => validateBlockCount(v, 144, 52560, "Cycle length"));
+  const rMax = useFormField("5", (v) => validatePositiveInt(v, "Max members"));
 
-  // Action forms
-  const [actRoscaId, setActRoscaId] = useState("");
-  const [orderList, setOrderList] = useState("");
+  // Action forms with validation
+  const actRoscaId = useFormField("", (v) => validatePositiveInt(v, "ROSCA ID"));
+  const orderList = useFormField("", validatePrincipalList);
 
   const refresh = useCallback(async () => {
     if (!address) return;
