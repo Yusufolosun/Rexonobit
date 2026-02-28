@@ -16,6 +16,7 @@ import { getTask, getTotalTasks } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validateTaskTitle, validateTaskDescription, validatePrincipal } from "../lib/validators";
 import { FormInput, FormTextarea } from "./FormInput";
+import { SkeletonRow } from "./SkeletonCard";
 
 interface Task {
   id: number;
@@ -187,10 +188,12 @@ export default function TaskBoard() {
       </div>
 
       {/* Task List */}
-      <h3 style={{ marginBottom: "0.75rem" }}>
-        Recent Tasks ({tasks.length})
-        {loading && <span className="spinner" style={{ marginLeft: "0.5rem" }} />}
-      </h3>
+      <h3 style={{ marginBottom: "0.75rem" }}>Recent Tasks ({tasks.length})</h3>
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1rem' }}>
+          {[1,2,3,4].map(i => <SkeletonRow key={i} />)}
+        </div>
+      )}
       {!loading && tasks.length === 0 && <p className="text-muted">No tasks found. Post the first one!</p>}
       <div className="grid-2">
         {tasks.map((t) => (
