@@ -391,3 +391,52 @@ Copy `frontend/.env.example` to `frontend/.env` and set:
 | `VITE_EXPLORER_URL` | No | Explorer base URL for tx and address links |
 
 > ⚠ Never commit `.env` — it is gitignored.
+
+
+---
+
+## Error Codes Reference
+
+All contract errors are surfaced as  responses. Use  from  to convert them to user-facing messages.
+
+| Range | Contract | Example |
+|-------|----------|---------|
+| 100–109 | cooperative-registry |  — Not a registered member |
+| 200–205 | savings-vault |  — Vault is locked |
+| 300–308 | lending-pool |  — Pool has insufficient liquidity |
+| 400–410 | rosca |  — Not a ROSCA member |
+| 500–508 | governance |  — Already voted on this proposal |
+| 600–605 | treasury |  — Spend amount exceeds treasury balance |
+| 700–702 | trust-score |  — Score update too frequent |
+| 800–803 | reputation-nft |  — Milestone requirements not met |
+| 900–910 | labor-market |  — Bid amount exceeds task budget |
+| 1000–1007 | arbitration |  — Cannot dispute your own task |
+| 1100–1104 | synthetic-credit |  — Insufficient collateral |
+| 1200–1202 | protocol-config |  — Unauthorized — deployer only |
+
+See [docs/lib/parseError.md](docs/lib/parseError.md) for the full table.
+
+
+
+---
+
+## Error Codes Reference
+
+All contract errors are surfaced as `(err uXXX)` responses. Use `parseContractError()` from `src/lib/parseError.ts` to convert them to user-facing messages.
+
+| Range     | Contract               | Example                                    |
+|-----------|------------------------|--------------------------------------------|
+| 100–109   | cooperative-registry   | u102 — Not a registered member             |
+| 200–205   | savings-vault          | u203 — Vault is locked                     |
+| 300–308   | lending-pool           | u301 — Pool has insufficient liquidity     |
+| 400–410   | rosca                  | u404 — Not a ROSCA member                  |
+| 500–508   | governance             | u503 — Already voted on this proposal      |
+| 600–605   | treasury               | u603 — Spend amount exceeds treasury balance |
+| 700–702   | trust-score            | u701 — Score update too frequent           |
+| 800–803   | reputation-nft         | u802 — Milestone requirements not met      |
+| 900–910   | labor-market           | u907 — Bid amount exceeds task budget      |
+| 1000–1007 | arbitration            | u1006 — Cannot dispute your own task       |
+| 1100–1104 | synthetic-credit       | u1100 — Insufficient collateral            |
+| 1200–1202 | protocol-config        | u1201 — Unauthorized, deployer only        |
+
+See [docs/lib/parseError.md](docs/lib/parseError.md) for the full table.
