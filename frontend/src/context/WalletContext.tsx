@@ -56,8 +56,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => {
     const isConnected = isWalletConnected();
     setConnected(isConnected);
-    setAddress(isConnected ? getConnectedAddress() : null);
-  }, []);
+    setAddress(isConnected ? getConnectedAddress(network) : null);
+  }, [network]);
 
   useEffect(() => {
     // Handle redirect from Hiro Wallet after auth
