@@ -17,6 +17,7 @@ import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validateTaskTitle, validateTaskDescription, validatePrincipal } from "../lib/validators";
 import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonRow } from "./SkeletonCard";
+import { useToast } from "../context/ToastContext";
 
 interface Task {
   id: number;
@@ -43,8 +44,7 @@ export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // Post task form with validation
   const taskTitle = useFormField("", validateTaskTitle);
@@ -76,14 +76,12 @@ export default function TaskBoard() {
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
-    setError(null);
-    setSuccess(null);
     try {
       const res = await fn();
-      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      toastSuccess(msg, res.txid);
       setTimeout(refresh, 4000);
     } catch (e) {
-      setError(String(e));
+      toastError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -104,10 +102,7 @@ export default function TaskBoard() {
     <section id="tasks" className="page-container">
       <h2 className="section-title">Labor Market</h2>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
-      {/* Post Task */}
+      {/* Post Task */}}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginBottom: "1rem" }}>Post a Task</h3>
         <div className="grid-2">
