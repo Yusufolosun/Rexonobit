@@ -145,3 +145,67 @@ Clarinet.test({
     );
   },
 });
+
+Clarinet.test({
+  name: "trust-score: initial score for new member is zero",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+    const result = chain.callReadOnlyFn(
+      "trust-score",
+      "get-total-score",
+      [types.principal(alice.address)],
+      deployer.address
+    );
+    result.result.expectUint(0);
+  },
+});
+
+Clarinet.test({
+  name: "trust-score: reward-savings increases total score",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("trust-score", "reward-savings", [types.principal(alice.address), types.uint(100)], deployer.address),
+    ]);
+    const result = chain.callReadOnlyFn(
+      "trust-score",
+      "get-total-score",
+      [types.principal(alice.address)],
+      deployer.address
+    );
+    result.result.expectUint(100);
+  },
+});
+
+Clarinet.test({
+  name: "trust-score: score does not exceed maximum of 1000",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("trust-score", "reward-savings", [types.principal(alice.address), types.uint(1500)], deployer.address),
+    ]);
+    const result = chain.callReadOnlyFn(
+      "trust-score",
+      "get-total-score",
+      [types.principal(alice.address)],
+      deployer.address
+    );
+    const score = parseInt(result.result.expectUint().toString());
+    assertEquals(score <= 1000, true);
+  },
+});
