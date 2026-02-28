@@ -7,7 +7,7 @@
  * and cycle management. On-chain Susu/Tontine/Chit-Fund mechanics.
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   createRosca,
@@ -73,6 +73,17 @@ export default function RoscaPanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
+
+  /** ROSCA groups that are still collecting contributions */
+  const activeRoscas = useMemo(
+    () => roscas.filter((r) => r.status?.toLowerCase() === "active" || r.status?.toLowerCase() === "open"),
+    [roscas]
+  );
+  /** ROSCA groups that have completed their cycle */
+  const completedRoscas = useMemo(
+    () => roscas.filter((r) => r.status?.toLowerCase() === "complete" || r.status?.toLowerCase() === "closed"),
+    [roscas]
+  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
