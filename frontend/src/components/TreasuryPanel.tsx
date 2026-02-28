@@ -14,6 +14,8 @@ import {
   getTreasuryProposal,
   getTotalCircles,
 } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validateSTX, validatePositiveInt, validatePrincipal, validateMaxLength } from "../lib/validators";
 
 interface Proposal {
   id: number;
@@ -42,19 +44,19 @@ export default function TreasuryPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Deposit form
-  const [depCircle, setDepCircle] = useState("");
-  const [depAmt, setDepAmt] = useState("");
+  // Deposit form with validation
+  const depCircle = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
+  const depAmt = useFormField("", validateSTX);
 
-  // Propose form
-  const [propCircle, setPropCircle] = useState("");
-  const [propRecipient, setPropRecipient] = useState("");
-  const [propAmt, setPropAmt] = useState("");
-  const [propDesc, setPropDesc] = useState("");
+  // Propose form with validation
+  const propCircle = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
+  const propRecipient = useFormField("", validatePrincipal);
+  const propAmt = useFormField("", validateSTX);
+  const propDesc = useFormField("", (v) => validateMaxLength(v, 200, "Description"));
 
-  // Vote / execute
-  const [voteId, setVoteId] = useState("");
-  const [execId, setExecId] = useState("");
+  // Vote / execute with validation
+  const voteId = useFormField("", (v) => validatePositiveInt(v, "Proposal ID"));
+  const execId = useFormField("", (v) => validatePositiveInt(v, "Proposal ID"));
 
   const refresh = useCallback(async () => {
     if (!address) return;
