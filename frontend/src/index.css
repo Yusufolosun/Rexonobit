@@ -361,4 +361,36 @@ textarea { resize: vertical; min-height: 80px; }
 .overflow-hidden { overflow: hidden; }
 .text-ellipsis  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* =====================================================================
+   TYPOGRAPHY UTILITIES
+   ===================================================================== */
+
+.text-xs    { font-size: 0.75rem; line-height: 1.4; }
+.text-sm    { font-size: 0.875rem; line-height: 1.5; }
+.text-base  { font-size: 1rem; line-height: 1.5; }
+.text-lg    { font-size: 1.125rem; line-height: 1.6; }
+.text-xl    { font-size: 1.25rem; line-height: 1.6; }
+.text-2xl   { font-size: 1.5rem; line-height: 1.4; }
+
+.font-normal   { font-weight: 400; }
+.font-medium   { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold     { font-weight: 700; }
+
+.text-left    { text-align: left; }
+.text-center  { text-align: center; }
+.text-right   { text-align: right; }
+
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-accent    { color: var(--accent, #6366f1); }
+.text-success   { color: var(--success-fg, #15803d); }
+.text-warning   { color: #92400e; }
+.text-danger    { color: var(--error, #ef4444); }
+.text-muted     { color: var(--text-secondary); opacity: 0.7; }
+
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.break-all { word-break: break-all; }
+.uppercase { text-transform: uppercase; letter-spacing: 0.06em; }
+
 
