@@ -50,6 +50,7 @@
     panel:         (list 3 principal),
     votes-for-claimant:   uint,
     votes-for-respondent: uint,
+    votes-cast:           uint,    ;; total verdicts submitted (including SPLIT)
     final-verdict: uint,          ;; 0=pending
     status:        uint,
     opened-at:     uint,
@@ -88,6 +89,7 @@
         fee-escrow: arb-fee,
         panel: (list),
         votes-for-claimant: u0, votes-for-respondent: u0,
+        votes-cast: u0,
         final-verdict: u0, status: DISPUTE-OPEN,
         opened-at: block-height, closed-at: u0 })
     (var-set dispute-nonce dispute-id)
