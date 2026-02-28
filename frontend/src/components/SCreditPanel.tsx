@@ -1,28 +1,21 @@
 // frontend/src/components/SCreditPanel.tsx
 // sCREDIT synthetic credit token: mint, burn, transfer, view credit limit
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { mintSCredit, burnSCredit, transferSCredit } from "../lib/transactions";
-import { getSCreditBalance, getCreditLimit, getTrustScore, getLockedBalance } from "../lib/read";
+import { useSCredit } from "../hooks/useSCredit";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePrincipal } from "../lib/validators";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 
-interface CreditState {
-  balance: number;
-  creditLimit: number;
-  minted: number;
-  available: number;
-  trustScore: number;
-  lockedSavings: number;
-}
-
 export default function SCreditPanel() {
   const { address, connected } = useWallet();
-  const [state, setState] = useState<CreditState | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { balance, creditLimit, trustScore, lockedSavings, loading, refresh } = useSCredit(address);
+  const minted = creditLimit > 0 ? Math.max(0, creditLimit - balance) : 0;
+  const available = Math.max(0, creditLimit - minted);
+  const utilizationPct = creditLimit > 0 ? ((minted / creditLimit) * 100).toFixed(1) : "0.0";
   const [txPending, setTxPending] = useState(false);
   const { success: toastSuccess, error: toastError } = useToast();
 
@@ -31,34 +24,6 @@ export default function SCreditPanel() {
   const burnAmt = useFormField("", validateSTX);
   const transferTo = useFormField("", validatePrincipal);
   const transferAmt = useFormField("", validateSTX);
-
-  const refresh = useCallback(async () => {
-    if (!address) return;
-    setLoading(true);
-    try {
-      const [balance, creditLimit, lockedSavings, trustScore] = await Promise.all([
-        getSCreditBalance(address).catch(() => 0),
-        getCreditLimit(address).catch(() => 0),
-        getLockedBalance(address).catch(() => 0),
-        getTrustScore(address).catch(() => 0),
-      ]);
-      const minted = Number(creditLimit) > 0
-        ? Math.max(0, Number(creditLimit) - Number(balance))
-        : 0;
-      setState({
-        balance: Number(balance),
-        creditLimit: Number(creditLimit),
-        minted,
-        available: Math.max(0, Number(creditLimit) - minted),
-        trustScore: Number(trustScore),
-        lockedSavings: Number(lockedSavings),
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [address]);
-
-  useEffect(() => { refresh(); }, [refresh]);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
@@ -83,9 +48,6 @@ export default function SCreditPanel() {
 
   const fmt = (v: number) => v.toLocaleString();
   const stx = (v: number) => (v / 1_000_000).toFixed(4);
-  const utilizationPct = state && state.creditLimit > 0
-    ? ((state.minted / state.creditLimit) * 100).toFixed(1)
-    : "0.0";
 
   return (
     <section id="scredit" className="page-container">
@@ -100,29 +62,29 @@ export default function SCreditPanel() {
         </div>
       )}
 
-      {state && (
+      {!loading && (
         <>
           <div className="grid-3" style={{ marginBottom: "2rem" }}>
             <div className="card">
               <span className="text-muted text-sm">sCREDIT Balance</span>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{fmt(state.balance)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>sCREDIT</span></div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{fmt(balance)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>sCREDIT</span></div>
             </div>
             <div className="card">
               <span className="text-muted text-sm">Credit Limit</span>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{fmt(state.creditLimit)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>sCREDIT</span></div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{fmt(creditLimit)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>sCREDIT</span></div>
             </div>
             <div className="card">
               <span className="text-muted text-sm">Available</span>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{fmt(state.available)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>sCREDIT</span></div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{fmt(available)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>sCREDIT</span></div>
             </div>
             <div className="card">
               <span className="text-muted text-sm">Trust Score</span>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{state.trustScore} <span className="text-muted" style={{ fontSize: "0.8rem" }}>/ 1000</span></div>
-              {state.trustScore < 700 && <span className="badge" style={{ background: "#ef4444", color: "#fff", fontSize: "0.68rem" }}>Need 700+</span>}
+              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{trustScore} <span className="text-muted" style={{ fontSize: "0.8rem" }}>/ 1000</span></div>
+              {trustScore < 700 && <span className="badge" style={{ background: "#ef4444", color: "#fff", fontSize: "0.68rem" }}>Need 700+</span>}
             </div>
             <div className="card">
               <span className="text-muted text-sm">Locked Savings</span>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{stx(state.lockedSavings)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>STX</span></div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{stx(lockedSavings)} <span className="text-muted" style={{ fontSize: "0.8rem" }}>STX</span></div>
             </div>
             <div className="card">
               <span className="text-muted text-sm">Utilization</span>
@@ -139,16 +101,20 @@ export default function SCreditPanel() {
               <h3 style={{ marginBottom: "1rem" }}>Mint sCREDIT</h3>
               <div className="form-group">
                 <label>Amount</label>
-                <input type="number" value={mintAmt} onChange={(e) => setMintAmt(e.target.value)} placeholder="1000" min="1" />
+                <input type="number" value={mintAmt.value} onChange={mintAmt.onChange} onBlur={mintAmt.onBlur} placeholder="1000" min="1" aria-invalid={!!mintAmt.error} />
+                {mintAmt.error && <span className="form-error" role="alert">{mintAmt.error}</span>}
               </div>
               <button
                 className="btn-primary"
-                disabled={txPending || !mintAmt || state.trustScore < 700}
-                onClick={() => handle(() => mintSCredit(parseInt(mintAmt)), "Mint submitted")}
+                disabled={txPending || !mintAmt.value || trustScore < 700}
+                onClick={() => {
+                  if (!mintAmt.validate()) return;
+                  handle(() => mintSCredit(parseInt(mintAmt.value)), "Mint submitted");
+                }}
               >
                 {txPending ? <span className="spinner" /> : "Mint sCREDIT"}
               </button>
-              {state.trustScore < 700 && <p className="text-muted text-sm" style={{ marginTop: "0.5rem" }}>Trust score too low to mint.</p>}
+              {trustScore < 700 && <p className="text-muted text-sm" style={{ marginTop: "0.5rem" }}>Trust score too low to mint.</p>}
             </div>
 
             {/* Burn */}
@@ -156,12 +122,16 @@ export default function SCreditPanel() {
               <h3 style={{ marginBottom: "1rem" }}>Burn sCREDIT</h3>
               <div className="form-group">
                 <label>Amount</label>
-                <input type="number" value={burnAmt} onChange={(e) => setBurnAmt(e.target.value)} placeholder="500" min="1" />
+                <input type="number" value={burnAmt.value} onChange={burnAmt.onChange} onBlur={burnAmt.onBlur} placeholder="500" min="1" aria-invalid={!!burnAmt.error} />
+                {burnAmt.error && <span className="form-error" role="alert">{burnAmt.error}</span>}
               </div>
               <button
                 className="btn-secondary"
-                disabled={txPending || !burnAmt}
-                onClick={() => handle(() => burnSCredit(parseInt(burnAmt)), "Burn submitted")}
+                disabled={txPending || !burnAmt.value}
+                onClick={() => {
+                  if (!burnAmt.validate()) return;
+                  handle(() => burnSCredit(parseInt(burnAmt.value)), "Burn submitted");
+                }}
               >
                 {txPending ? <span className="spinner" /> : "Burn sCREDIT"}
               </button>
@@ -173,17 +143,22 @@ export default function SCreditPanel() {
               <div className="grid-2">
                 <div className="form-group">
                   <label>Recipient</label>
-                  <input value={transferTo} onChange={(e) => setTransferTo(e.target.value)} placeholder="ST1PQHQ…" />
+                  <input value={transferTo.value} onChange={transferTo.onChange} onBlur={transferTo.onBlur} placeholder="ST1PQHQ…" aria-invalid={!!transferTo.error} />
+                  {transferTo.error && <span className="form-error" role="alert">{transferTo.error}</span>}
                 </div>
                 <div className="form-group">
                   <label>Amount</label>
-                  <input type="number" value={transferAmt} onChange={(e) => setTransferAmt(e.target.value)} placeholder="100" min="1" />
+                  <input type="number" value={transferAmt.value} onChange={transferAmt.onChange} onBlur={transferAmt.onBlur} placeholder="100" min="1" aria-invalid={!!transferAmt.error} />
+                  {transferAmt.error && <span className="form-error" role="alert">{transferAmt.error}</span>}
                 </div>
               </div>
               <button
                 className="btn-secondary"
-                disabled={txPending || !transferTo || !transferAmt}
-                onClick={() => handle(() => transferSCredit(parseInt(transferAmt), transferTo), "Transfer submitted")}
+                disabled={txPending || !transferTo.value || !transferAmt.value}
+                onClick={() => {
+                  if (!transferTo.validate() || !transferAmt.validate()) return;
+                  handle(() => transferSCredit(parseInt(transferAmt.value), transferTo.value), "Transfer submitted");
+                }}
               >
                 {txPending ? <span className="spinner" /> : "Transfer"}
               </button>
