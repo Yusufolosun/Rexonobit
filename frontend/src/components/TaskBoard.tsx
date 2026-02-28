@@ -1,6 +1,13 @@
 // frontend/src/components/TaskBoard.tsx
 // On-chain gig board: post task, bid, accept bid, submit, attest, dispute
 
+/**
+ * TaskBoard — labor market interface.
+ * Post tasks with STX bounty, receive bids, accept workers, submit
+ * deliverables, and attest completion. Integrates with arbitration for
+ * dispute escalation.
+ */
+
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
