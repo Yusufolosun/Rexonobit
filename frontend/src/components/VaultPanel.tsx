@@ -66,10 +66,10 @@ export default function VaultPanel() {
   const stx = (micro: number) => (micro / 1_000_000).toFixed(4);
 
   return (
-    <section id="vault" className="page-container">
-      <h2 className="section-title">Savings Vault</h2>
+    <section id="vault" className="page-container" aria-labelledby="vault-title">
+      <h2 id="vault-title" className="section-title">Savings Vault</h2>
 
-      {loadingData && <div style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" /> Refreshing…</div>}
+      {loadingData && <div role="status" aria-live="polite" style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" aria-hidden="true" /> Refreshing…</div>}
 
       {vault && (
         <div className="grid-3" style={{ marginBottom: "1.5rem" }}>
