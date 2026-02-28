@@ -134,3 +134,48 @@ Clarinet.test({
     acceptBlock.receipts[0].result.expectOk().expectBool(true);
   },
 });
+
+Clarinet.test({
+  name: "initialize: double initialization is rejected",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "set-param: non-admin cannot change protocol parameters",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const stranger = accounts.get("wallet_1")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("protocol-config", "set-min-deposit", [types.uint(500_000)], stranger.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "propose-admin: non-admin cannot propose new admin",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const alice = accounts.get("wallet_1")!;
+    const bob = accounts.get("wallet_2")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("protocol-config", "propose-admin", [types.principal(bob.address)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
