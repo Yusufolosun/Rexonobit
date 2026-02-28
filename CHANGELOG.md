@@ -6,6 +6,34 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.6.0] — 2024-07-01
+
+### Added
+- `frontend/src/hooks/useFetch.ts` — generic data-fetch hook with `loading`, `error`, `data`, `refetch()`, and `AbortController` cleanup on unmount
+- `frontend/src/hooks/useError.ts` — error state manager with `setError`, `clearError`, and `wrapAsync` helpers
+- `frontend/src/hooks/useAsyncCallback.ts` — wraps arbitrary async functions with `loading`/`error` tracking, safe on unmounted components
+- `frontend/src/lib/sort.ts` — non-mutating sort utilities (trust score, date, block height, circle balance/name/member count, loan due date/amount)
+- `frontend/src/lib/parseError.ts` — full error code registry for all 12 contracts; `parseContractError`, `extractErrorCode`, `isOk`, `isErr`
+- `frontend/src/lib/datetime.ts` — `blocksToHuman`, `blockHeightToEta`, `blocksUntil`, `isPast`, `timeAgo`, `unixTimeAgo`, `formatDate`
+- `frontend/src/context/NotificationsContext.tsx` — `NotificationsProvider` with `addNotification`, `dismiss`, `markAllRead`, `unreadCount`
+- `frontend/src/context/WalletContext.tsx` — added `NetworkMode`, `network` state initialized from Vite env define, `setNetwork` action
+- `tests/labor-market-integration.test.ts` — 5 end-to-end integration tests covering task post/bid/accept/complete/attest/dispute flows
+- `tests/lending-pool-integration.test.ts` — 6 integration tests for fund/request/repay/liquidate/over-budget scenarios
+
+### Improved
+- **A11y** — `CircleCard`, `MemberProfile`, `BadgeGallery` now use `role`, `aria-label`, `aria-busy`
+- **CSS** — card hover lift (`translateY(-2px)` + shadow), tooltip wrapper, badge/tag classes (`.badge-primary`, `.badge-success`, etc.)
+- **Makefile** — added `test-integration`, `ci`, `size-check` targets
+
+### Docs
+- Hook docs: `useWindowSize`, `useClickOutside`, `useKeyPress`, `useCountdown`, `useSet`, `useMap`, `useQueue`, `useFetch`, `useError`, `useAsyncCallback`
+- Lib docs: `sort.md`, `parseError.md`, `datetime.md`
+- Architecture docs: `trust-score-algorithm.md`, `loan-mechanics.md`, `rosca-mechanics.md`, `governance-flow.md`
+- Component docs: all 24 components now documented in `docs/components/`
+- README error codes section covering all 12 contracts
+
+---
+
 ## [Unreleased]
 
 ### Added
