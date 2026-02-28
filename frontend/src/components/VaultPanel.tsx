@@ -94,6 +94,8 @@ export default function VaultPanel() {
           <button
             className="btn-primary"
             disabled={txPending || !depositField.value}
+            aria-busy={txPending}
+            aria-label="Deposit STX to savings vault"
             onClick={() => {
               if (!depositField.validate()) return;
               handle(() => deposit(Math.floor(parseFloat(depositField.value) * 1_000_000)), "Deposit submitted");
@@ -111,6 +113,8 @@ export default function VaultPanel() {
             <button
               className="btn-secondary"
               disabled={txPending}
+              aria-busy={txPending}
+              aria-label="Withdraw available STX from vault"
               onClick={() => handle(() => withdraw(), "Withdraw submitted")}
               style={{ flex: 1 }}
             >
@@ -119,6 +123,8 @@ export default function VaultPanel() {
             <button
               className="btn-secondary"
               disabled={txPending}
+              aria-busy={txPending}
+              aria-label="Withdraw locked STX from vault"
               onClick={() => handle(() => withdrawLocked(), "Unlock withdraw submitted")}
               style={{ flex: 1 }}
             >
