@@ -24,6 +24,15 @@ typecheck: ## TypeScript type-check frontend (no emit)
 install: ## Install frontend dependencies
 	cd frontend && npm install
 
+format: ## Auto-format frontend code with Prettier (if configured)
+	cd frontend && npx prettier --write "src/**/*.{ts,tsx,css}"
+
+preview: ## Preview production build locally
+	cd frontend && npm run build && npm run preview
+
+audit: ## Run npm security audit on frontend deps
+	cd frontend && npm audit --audit-level=moderate
+
 # ── Contracts ─────────────────────────────────────────────────────────────────
 check: ## Syntax-check all Clarity contracts
 	clarinet check
@@ -54,3 +63,6 @@ deploy-mainnet: ## Deploy to Mainnet — requires explicit flag
 # ── Utilities ─────────────────────────────────────────────────────────────────
 clean: ## Remove build artifacts
 	rm -rf frontend/dist frontend/node_modules/.vite coverage/
+
+clean-all: ## Remove build artifacts AND node_modules
+	rm -rf frontend/dist frontend/node_modules coverage/
