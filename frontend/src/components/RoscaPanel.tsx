@@ -24,6 +24,8 @@ import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 interface RoscaData {
   id: number;
@@ -43,7 +45,8 @@ export default function RoscaPanel() {
   const [roscas, setRoscas] = useState<RoscaData[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   // Create form with validation
   const rName = useFormField("", (v) => validateMaxLength(v, 50, "Name"));
@@ -90,9 +93,10 @@ export default function RoscaPanel() {
     try {
       const res = await fn();
       toastSuccess(msg, res.txid);
+      clearError();
       setTimeout(refresh, 4000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -118,6 +122,7 @@ export default function RoscaPanel() {
   return (
     <section id="rosca" className="page-container" aria-labelledby="rosca-title">
       <h2 id="rosca-title" className="section-title">ROSCA Groups</h2>
+      <ErrorAlert error={contractError} onDismiss={clearError} />
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         Rotating Savings and Credit Associations — Susu / Chit Fund on Stacks.
       </p>
