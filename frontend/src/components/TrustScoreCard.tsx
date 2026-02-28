@@ -1,18 +1,9 @@
 // frontend/src/components/TrustScoreCard.tsx
 // Displays member trust score with full component breakdown
 
-import React, { useEffect, useState } from "react";
-import { getTrustScoreFull } from "../lib/read";
+import React from "react";
+import { useTrustScore } from "../hooks/useTrustScore";
 import { SkeletonCard } from "./SkeletonCard";
-
-interface TrustData {
-  score: number;
-  savingsPoints: number;
-  loanPoints: number;
-  endorsementPoints: number;
-  laborPoints: number;
-  penaltyPoints: number;
-}
 
 interface Props {
   address: string;
@@ -30,18 +21,7 @@ function ScoreBar({ value, max, color }: { value: number; max: number; color: st
 }
 
 export default function TrustScoreCard({ address }: Props) {
-  const [data, setData] = useState<TrustData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!address) return;
-    setLoading(true);
-    getTrustScoreFull(address)
-      .then((d: TrustData) => setData(d))
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false));
-  }, [address]);
+  const { total, savings, loan, endorsement, labor, penalty, loading, error } = useTrustScore(address);
 
   const tier = (score: number) => {
     if (score >= 900) return { label: "Platinum", color: "#e2e8f0" };
@@ -53,30 +33,29 @@ export default function TrustScoreCard({ address }: Props) {
 
   if (loading) return <SkeletonCard lines={6} height="220px" />;
   if (error) return <div className="card alert alert-error">{error}</div>;
-  if (!data) return null;
 
-  const { label: tierLabel, color: tierColor } = tier(data.score);
+  const { label: tierLabel, color: tierColor } = tier(total);
 
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
         <div>
           <span className="text-sm text-muted" style={{ display: "block" }}>Trust Score</span>
-          <span style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-0.04em" }}>{data.score}</span>
+          <span style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-0.04em" }}>{total}</span>
           <span className="text-muted" style={{ fontSize: "0.85rem" }}>&nbsp;/ 1000</span>
         </div>
         <span className={`badge badge-primary`} style={{ background: tierColor, color: "#0a0a0a", fontWeight: 700 }}>{tierLabel}</span>
       </div>
 
-      <ScoreBar value={data.score} max={BAR_MAX} color="var(--color-primary)" />
+      <ScoreBar value={total} max={BAR_MAX} color="var(--color-primary)" />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "1.25rem" }}>
         {[
-          { label: "Savings", value: data.savingsPoints, color: "#10b981" },
-          { label: "Loan Repayments", value: data.loanPoints, color: "#3b82f6" },
-          { label: "Endorsements", value: data.endorsementPoints, color: "#8b5cf6" },
-          { label: "Labor", value: data.laborPoints, color: "#f59e0b" },
-          { label: "Penalties", value: data.penaltyPoints, color: "#ef4444" },
+          { label: "Savings", value: savings, color: "#10b981" },
+          { label: "Loan Repayments", value: loan, color: "#3b82f6" },
+          { label: "Endorsements", value: endorsement, color: "#8b5cf6" },
+          { label: "Labor", value: labor, color: "#f59e0b" },
+          { label: "Penalties", value: penalty, color: "#ef4444" },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
