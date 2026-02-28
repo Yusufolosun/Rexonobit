@@ -119,3 +119,49 @@ Clarinet.test({
     result.result.expectOk().expectUint(2);
   },
 });
+
+Clarinet.test({
+  name: "mint-badge: non-deployer cannot mint a badge",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    const bob = accounts.get("wallet_2")!;
+    const block = chain.mineBlock([
+      Tx.contractCall("reputation-nft", "mint-badge", [types.principal(bob.address), types.uint(1)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "get-owner: returns owner after minting",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { deployer, alice } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("reputation-nft", "mint-badge", [types.principal(alice.address), types.uint(1)], deployer.address),
+    ]);
+    const result = chain.callReadOnlyFn(
+      "reputation-nft",
+      "get-owner",
+      [types.uint(1)],
+      deployer.address
+    );
+    result.result.expectOk();
+  },
+});
+
+Clarinet.test({
+  name: "get-token-tier: returns correct tier for minted token",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { deployer, alice } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("reputation-nft", "mint-badge", [types.principal(alice.address), types.uint(3)], deployer.address),
+    ]);
+    const result = chain.callReadOnlyFn(
+      "reputation-nft",
+      "get-token-tier",
+      [types.uint(1)],
+      deployer.address
+    );
+    result.result.expectOk().expectUint(3);
+  },
+});
