@@ -157,6 +157,8 @@ export default function RoscaPanel() {
         </div>
         <button
           className="btn-primary"
+          aria-busy={txPending}
+          aria-label="Create new ROSCA group"
           disabled={txPending || !rName || !rContrib}
           onClick={() =>
             handle(
@@ -177,10 +179,10 @@ export default function RoscaPanel() {
           <input type="number" value={actRoscaId} onChange={(e) => setActRoscaId(e.target.value)} placeholder="1" />
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button className="btn-secondary" disabled={txPending || !actRoscaId} onClick={() => handle(() => joinRosca(parseInt(actRoscaId)), "Joined ROSCA")}>Join</button>
-          <button className="btn-secondary" disabled={txPending || !actRoscaId} onClick={() => handle(() => lockAndStartRosca(parseInt(actRoscaId)), "ROSCA started")}>Lock & Start</button>
-          <button className="btn-primary" disabled={txPending || !actRoscaId} onClick={() => handle(() => contributeRosca(parseInt(actRoscaId)), "Contribution sent")}>Contribute</button>
-          <button className="btn-secondary" disabled={txPending || !actRoscaId} onClick={() => handle(() => payoutRosca(parseInt(actRoscaId)), "Payout triggered")}>Trigger Payout</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Join ROSCA" disabled={txPending || !actRoscaId} onClick={() => handle(() => joinRosca(parseInt(actRoscaId)), "Joined ROSCA")}>Join</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Lock and start ROSCA" disabled={txPending || !actRoscaId} onClick={() => handle(() => lockAndStartRosca(parseInt(actRoscaId)), "ROSCA started")}>Lock & Start</button>
+          <button className="btn-primary" aria-busy={txPending} aria-label="Contribute to ROSCA" disabled={txPending || !actRoscaId} onClick={() => handle(() => contributeRosca(parseInt(actRoscaId)), "Contribution sent")}>Contribute</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Trigger payout" disabled={txPending || !actRoscaId} onClick={() => handle(() => payoutRosca(parseInt(actRoscaId)), "Payout triggered")}>Trigger Payout</button>
         </div>
 
         {/* Set payout order */}
@@ -196,6 +198,8 @@ export default function RoscaPanel() {
           />
           <button
             className="btn-secondary"
+            aria-busy={txPending}
+            aria-label="Set payout order"
             disabled={txPending || !actRoscaId || !orderList}
             onClick={() => {
               const principals = orderList.split(",").map((p) => p.trim()).filter(Boolean);
