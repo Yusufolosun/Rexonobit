@@ -1,0 +1,208 @@
+// frontend/src/components/LoanPanel.tsx
+// Circle-backed micro-lending: request loan, repay, liquidate defaulter
+
+import React, { useEffect, useState, useCallback } from "react";
+import { useWallet } from "../context/WalletContext";
+import { requestLoan, repayLoan, liquidateDefaulter, fundPool } from "../lib/transactions";
+import { getLoan, getPoolBalance, getTotalCircles } from "../lib/read";
+
+interface Loan {
+  id: number;
+  borrower: string;
+  circleId: number;
+  amount: number;
+  repaid: number;
+  dueAt: number;
+  status: string;
+}
+
+interface Pool {
+  circleId: number;
+  balance: number;
+}
+
+export default function LoanPanel() {
+  const { address, connected } = useWallet();
+  const [activeLoan, setActiveLoan] = useState<Loan | null>(null);
+  const [pools, setPools] = useState<Pool[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [txPending, setTxPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Forms
+  const [reqCircle, setReqCircle] = useState("");
+  const [reqAmount, setReqAmount] = useState("");
+  const [repayLoanId, setRepayLoanId] = useState("");
+  const [repayAmt, setRepayAmt] = useState("");
+  const [liqLoanId, setLiqLoanId] = useState("");
+  const [fundCircle, setFundCircle] = useState("");
+  const [fundAmt, setFundAmt] = useState("");
+
+  const refresh = useCallback(async () => {
+    if (!address) return;
+    setLoading(true);
+    try {
+      const total = await getTotalCircles().catch(() => 0);
+      const poolList: Pool[] = [];
+      for (let i = 1; i <= Math.min(Number(total), 20); i++) {
+        const bal = await getPoolBalance(i).catch(() => 0);
+        if (Number(bal) > 0) poolList.push({ circleId: i, balance: Number(bal) });
+      }
+      setPools(poolList);
+    } finally {
+      setLoading(false);
+    }
+  }, [address]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
+    setTxPending(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fn();
+      setSuccess(`${msg} — txid: ${res.txid.slice(0, 12)}…`);
+      setTimeout(refresh, 4000);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setTxPending(false);
+    }
+  };
+
+  if (!connected) {
+    return (
+      <section id="loans" className="page-container">
+        <div className="card alert alert-info">Connect wallet to access lending pool.</div>
+      </section>
+    );
+  }
+
+  const stx = (v: number) => (v / 1_000_000).toFixed(4);
+
+  return (
+    <section id="loans" className="page-container">
+      <h2 className="section-title">Lending Pool</h2>
+
+      {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
+      {loading && <div style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" /> Loading…</div>}
+
+      {/* Pool balances */}
+      {pools.length > 0 && (
+        <>
+          <h3 style={{ marginBottom: "0.75rem" }}>Circle Pools</h3>
+          <div className="grid-3" style={{ marginBottom: "2rem" }}>
+            {pools.map((p) => (
+              <div className="card" key={p.circleId}>
+                <span className="text-muted text-sm">Circle #{p.circleId}</span>
+                <div style={{ fontSize: "1.3rem", fontWeight: 800 }}>{stx(p.balance)} <span className="text-muted" style={{ fontSize: "0.78rem" }}>STX</span></div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="grid-2">
+        {/* Fund Pool */}
+        <div className="card">
+          <h3 style={{ marginBottom: "1rem" }}>Fund a Pool</h3>
+          <div className="form-group">
+            <label>Circle ID</label>
+            <input type="number" value={fundCircle} onChange={(e) => setFundCircle(e.target.value)} placeholder="1" />
+          </div>
+          <div className="form-group">
+            <label>Amount (STX)</label>
+            <input type="number" value={fundAmt} onChange={(e) => setFundAmt(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+          </div>
+          <button
+            className="btn-secondary"
+            disabled={txPending || !fundCircle || !fundAmt}
+            onClick={() =>
+              handle(
+                () => fundPool(parseInt(fundCircle), Math.floor(parseFloat(fundAmt) * 1_000_000)),
+                "Pool funded"
+              )
+            }
+          >
+            {txPending ? <span className="spinner" /> : "Fund Pool"}
+          </button>
+        </div>
+
+        {/* Request Loan */}
+        <div className="card">
+          <h3 style={{ marginBottom: "1rem" }}>Request Loan</h3>
+          <p className="text-muted text-sm" style={{ marginBottom: "0.75rem" }}>
+            Loan amount is capped by your trust score × multiplier.
+          </p>
+          <div className="form-group">
+            <label>Circle ID</label>
+            <input type="number" value={reqCircle} onChange={(e) => setReqCircle(e.target.value)} placeholder="1" />
+          </div>
+          <div className="form-group">
+            <label>Amount (STX)</label>
+            <input type="number" value={reqAmount} onChange={(e) => setReqAmount(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+          </div>
+          <button
+            className="btn-primary"
+            disabled={txPending || !reqCircle || !reqAmount}
+            onClick={() =>
+              handle(
+                () => requestLoan(parseInt(reqCircle), Math.floor(parseFloat(reqAmount) * 1_000_000)),
+                "Loan requested"
+              )
+            }
+          >
+            {txPending ? <span className="spinner" /> : "Request Loan"}
+          </button>
+        </div>
+
+        {/* Repay Loan */}
+        <div className="card">
+          <h3 style={{ marginBottom: "1rem" }}>Repay Loan</h3>
+          <div className="form-group">
+            <label>Loan ID</label>
+            <input type="number" value={repayLoanId} onChange={(e) => setRepayLoanId(e.target.value)} placeholder="1" />
+          </div>
+          <div className="form-group">
+            <label>Amount (STX)</label>
+            <input type="number" value={repayAmt} onChange={(e) => setRepayAmt(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+          </div>
+          <button
+            className="btn-primary"
+            disabled={txPending || !repayLoanId || !repayAmt}
+            onClick={() =>
+              handle(
+                () => repayLoan(parseInt(repayLoanId), Math.floor(parseFloat(repayAmt) * 1_000_000)),
+                "Repayment submitted"
+              )
+            }
+          >
+            {txPending ? <span className="spinner" /> : "Repay"}
+          </button>
+        </div>
+
+        {/* Liquidate Defaulter */}
+        <div className="card">
+          <h3 style={{ marginBottom: "1rem" }}>Liquidate Defaulter</h3>
+          <p className="text-muted text-sm" style={{ marginBottom: "0.75rem" }}>
+            Call after loan due date has passed. Anyone can trigger liquidation.
+          </p>
+          <div className="form-group">
+            <label>Loan ID</label>
+            <input type="number" value={liqLoanId} onChange={(e) => setLiqLoanId(e.target.value)} placeholder="1" />
+          </div>
+          <button
+            className="btn-secondary"
+            disabled={txPending || !liqLoanId}
+            onClick={() => handle(() => liquidateDefaulter(parseInt(liqLoanId)), "Liquidation submitted")}
+          >
+            {txPending ? <span className="spinner" /> : "Liquidate"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
