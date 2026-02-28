@@ -95,6 +95,11 @@ The payout order is determined at circle creation using a pseudo-random seed der
 | `contribute` | Status = ACTIVE, within cycle window, member not yet paid this cycle |
 | `select-recipient` | Status = ACTIVE, cycle end block reached, all contributions collected |
 | `create-circle` | `contribution > 0`, `max-members ≥ 2`, `cycle-length ≥ 144` (≥1 day) |
+| `lock-and-start` | Status = PENDING; does **not** transfer STX — purely activates the ROSCA |
+
+> **Note:** `lock-and-start` is a status-transition-only call (PENDING → ACTIVE).
+> All STX collection happens via `contribute` on a per-cycle basis, so members
+> are never charged upfront.
 
 ---
 

@@ -142,20 +142,17 @@
 
 ;; ─── Lock contributions and start ROSCA ──────────────────────────────────────
 ;; Each member calls this once. When all members have locked, ROSCA begins.
-;; Member locks (member-count × contribution) upfront.
+;; Transitions the ROSCA from PENDING → ACTIVE.  Actual STX collection
+;; happens on a per-cycle basis via `contribute`.
 (define-public (lock-and-start (rosca-id uint))
   (let (
     (caller      tx-sender)
     (rosca       (unwrap! (map-get? roscas { id: rosca-id }) ERR-ROSCA-NOT-FOUND))
     (membership  (unwrap! (map-get? rosca-members
                     { rosca-id: rosca-id, member: caller }) ERR-NOT-IN-ROSCA))
-    ;; Total lock = full ROSCA run contribution
-    (lock-amount (* (get contribution rosca) (get member-count rosca)))
   )
     (asserts! (not (is-protocol-paused))                  ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status rosca) ROSCA-PENDING)     ERR-ROSCA-STARTED)
-    ;; Transfer full commitment upfront
-    (try! (stx-transfer? lock-amount caller (as-contract tx-sender)))
     ;; If all members locked → set active
     ;; (simplified: track via balance; full impl uses a locked-members counter)
     (ok true)

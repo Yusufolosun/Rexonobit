@@ -264,3 +264,29 @@ Clarinet.test({
   },
 });
 
+Clarinet.test({
+  name: "lock-and-start: does not transfer STX from the caller",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setup(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall(
+        "rosca",
+        "create-rosca",
+        [types.utf8("NoCharge"), types.uint(1_000_000), types.uint(2), types.uint(4320)],
+        alice.address
+      ),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "lock-and-start", [types.uint(1)], alice.address),
+    ]);
+    block.receipts[0].result.expectOk();
+    // No STX transfer events — lock-and-start is purely a status transition
+    const stxEvents = block.receipts[0].events.filter(
+      (e: any) => e.type === "stx_transfer_event"
+    );
+    assertEquals(stxEvents.length, 0);
+  },
+});
