@@ -1,3 +1,9 @@
+/**
+ * @module useFormField
+ * @description Controlled input hook with integrated validation.
+ * Provides value, onChange, onBlur, error state, and a validate() trigger.
+ * Pair with FormInput component for consistent form UX.
+ */
 import { useState, useCallback, ChangeEvent } from 'react';
 import type { ValidationResult } from '../lib/validators';
 
