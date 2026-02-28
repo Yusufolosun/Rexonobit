@@ -8,7 +8,7 @@
  * locked savings balance via the synthetic-credit contract.
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import { mintSCredit, burnSCredit, transferSCredit } from "../lib/transactions";
 import { useSCredit } from "../hooks/useSCredit";
@@ -20,9 +20,20 @@ import { useToast } from "../context/ToastContext";
 export default function SCreditPanel() {
   const { address, connected } = useWallet();
   const { balance, creditLimit, trustScore, lockedSavings, loading, refresh } = useSCredit(address);
-  const minted = creditLimit > 0 ? Math.max(0, creditLimit - balance) : 0;
-  const available = Math.max(0, creditLimit - minted);
-  const utilizationPct = creditLimit > 0 ? ((minted / creditLimit) * 100).toFixed(1) : "0.0";
+
+  /** Amount of sCREDIT already minted (outstanding) */
+  const minted = useMemo(
+    () => (creditLimit > 0 ? Math.max(0, creditLimit - balance) : 0),
+    [creditLimit, balance]
+  );
+  /** Amount of sCREDIT still available to mint */
+  const available = useMemo(() => Math.max(0, creditLimit - minted), [creditLimit, minted]);
+  /** Utilization percentage as a formatted string */
+  const utilizationPct = useMemo(
+    () => (creditLimit > 0 ? ((minted / creditLimit) * 100).toFixed(1) : "0.0"),
+    [minted, creditLimit]
+  );
+
   const [txPending, setTxPending] = useState(false);
   const { success: toastSuccess, error: toastError } = useToast();
 
