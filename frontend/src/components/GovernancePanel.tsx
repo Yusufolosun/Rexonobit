@@ -165,6 +165,8 @@ export default function GovernancePanel() {
         </div>
         <button
           className="btn-primary"
+          aria-busy={txPending}
+          aria-label="Submit governance proposal"
           disabled={txPending || !propTitle}
           onClick={() =>
             handle(
@@ -185,10 +187,10 @@ export default function GovernancePanel() {
           <input type="number" value={actId} onChange={(e) => setActId(e.target.value)} placeholder="1" />
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button className="btn-primary" disabled={txPending || !actId} onClick={() => handle(() => voteGovernance(parseInt(actId), true), "Vote YES cast")}>Vote YES</button>
-          <button className="btn-secondary" disabled={txPending || !actId} onClick={() => handle(() => voteGovernance(parseInt(actId), false), "Vote NO cast")}>Vote NO</button>
-          <button className="btn-secondary" disabled={txPending || !actId} onClick={() => handle(() => executeGovernanceProposal(parseInt(actId)), "Proposal executed")}>Execute</button>
-          <button className="btn-secondary" disabled={txPending || !actId} onClick={() => handle(() => vetoGovernanceProposal(parseInt(actId)), "Proposal vetoed")}>Veto</button>
+          <button className="btn-primary" aria-busy={txPending} aria-label="Vote yes on proposal" disabled={txPending || !actId} onClick={() => handle(() => voteGovernance(parseInt(actId), true), "Vote YES cast")}>Vote YES</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Vote no on proposal" disabled={txPending || !actId} onClick={() => handle(() => voteGovernance(parseInt(actId), false), "Vote NO cast")}>Vote NO</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Execute proposal" disabled={txPending || !actId} onClick={() => handle(() => executeGovernanceProposal(parseInt(actId)), "Proposal executed")}>Execute</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Veto proposal" disabled={txPending || !actId} onClick={() => handle(() => vetoGovernanceProposal(parseInt(actId)), "Proposal vetoed")}>Veto</button>
         </div>
       </div>
 
