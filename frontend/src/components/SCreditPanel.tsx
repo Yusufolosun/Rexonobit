@@ -16,6 +16,8 @@ import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePrincipal } from "../lib/validators";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 export default function SCreditPanel() {
   const { address, connected } = useWallet();
@@ -35,7 +37,8 @@ export default function SCreditPanel() {
   );
 
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   // Forms with validation
   const mintAmt = useFormField("", validateSTX);
@@ -48,9 +51,10 @@ export default function SCreditPanel() {
     try {
       const res = await fn();
       toastSuccess(msg, res.txid);
+      clearError();
       setTimeout(refresh, 4000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -70,6 +74,7 @@ export default function SCreditPanel() {
   return (
     <section id="scredit" className="page-container" aria-labelledby="scredit-title">
       <h2 id="scredit-title" className="section-title">sCREDIT — Synthetic Credit</h2>
+      <ErrorAlert error={contractError} onDismiss={clearError} />
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         Mint sCREDIT against locked savings. Credit limit = locked STX × 50%. Requires trust score ≥ 700.
       </p>
