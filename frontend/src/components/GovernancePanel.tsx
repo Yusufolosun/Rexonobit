@@ -12,6 +12,7 @@ import {
 import { getGovernanceProposal } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateRequired, validateMaxLength, validatePositiveInt } from "../lib/validators";
+import { SkeletonCard } from "./SkeletonCard";
 
 interface GovProposal {
   id: number;
@@ -175,10 +176,12 @@ export default function GovernancePanel() {
       </div>
 
       {/* Proposals */}
-      <h3 style={{ marginBottom: "0.75rem" }}>
-        Proposals ({proposals.length})
-        {loading && <span className="spinner" style={{ marginLeft: "0.5rem" }} />}
-      </h3>
+      <h3 style={{ marginBottom: "0.75rem" }}>Proposals ({proposals.length})</h3>
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+          {[1,2].map(i => <SkeletonCard key={i} lines={4} height="120px" />)}
+        </div>
+      )}
       {!loading && proposals.length === 0 && <p className="text-muted">No proposals found.</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {proposals.map((p) => {
