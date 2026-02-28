@@ -50,6 +50,7 @@
     panel:         (list 3 principal),
     votes-for-claimant:   uint,
     votes-for-respondent: uint,
+    votes-cast:           uint,    ;; total verdicts submitted (including SPLIT)
     final-verdict: uint,          ;; 0=pending
     status:        uint,
     opened-at:     uint,
@@ -88,6 +89,7 @@
         fee-escrow: arb-fee,
         panel: (list),
         votes-for-claimant: u0, votes-for-respondent: u0,
+        votes-cast: u0,
         final-verdict: u0, status: DISPUTE-OPEN,
         opened-at: block-height, closed-at: u0 })
     (var-set dispute-nonce dispute-id)
@@ -159,12 +161,14 @@
       (new-for-r  (if (is-eq verdict VERDICT-FAVOR-RESPONDENT)
                     (+ (get votes-for-respondent dispute) u1)
                     (get votes-for-respondent dispute)))
-      (all-voted  (>= (+ new-for-c new-for-r) u2))
+      (new-cast   (+ (get votes-cast dispute) u1))
+      (all-voted  (>= new-cast (len panel)))
     )
       (map-set disputes { dispute-id: dispute-id }
         (merge dispute
           { votes-for-claimant:   new-for-c,
             votes-for-respondent: new-for-r,
+            votes-cast:           new-cast,
             status: (if all-voted DISPUTE-VERDICT (get status dispute)) }))
       (ok all-voted)
     )
