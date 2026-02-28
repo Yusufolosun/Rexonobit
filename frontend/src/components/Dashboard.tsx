@@ -7,7 +7,7 @@
  * ROSCA membership into a single statscard grid.
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   getTrustScore,

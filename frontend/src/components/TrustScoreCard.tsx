@@ -1,7 +1,6 @@
 // frontend/src/components/TrustScoreCard.tsx
 // Displays member trust score with full component breakdown
 
-import React from "react";
 import { useTrustScore } from "../hooks/useTrustScore";
 import { SkeletonCard } from "./SkeletonCard";
 

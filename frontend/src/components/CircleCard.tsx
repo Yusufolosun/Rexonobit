@@ -1,7 +1,6 @@
 // frontend/src/components/CircleCard.tsx
 // Displays a single cooperative circle with member count and actions
 
-import React from "react";
 
 export interface Circle {
   id: number;

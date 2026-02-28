@@ -1,6 +1,5 @@
 // frontend/src/components/Navbar.tsx
 
-import React from "react";
 import { useWallet } from "../context/WalletContext";
 import { ThemeToggle } from "./ThemeToggle";
 

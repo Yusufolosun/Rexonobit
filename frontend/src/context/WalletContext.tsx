@@ -1,7 +1,7 @@
 // frontend/src/context/WalletContext.tsx
 // Global wallet state using React Context
 
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
