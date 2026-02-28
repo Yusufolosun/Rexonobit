@@ -8,7 +8,7 @@
  * for penalty application on losing parties.
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   openDispute,
@@ -78,6 +78,17 @@ export default function ArbitrationPanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
+
+  /** Disputes that are still open / awaiting verdict */
+  const openDisputes = useMemo(
+    () => disputes.filter((d) => d.status?.toLowerCase() === "open"),
+    [disputes]
+  );
+  /** Disputes that have been resolved or closed */
+  const closedDisputes = useMemo(
+    () => disputes.filter((d) => d.status?.toLowerCase() !== "open"),
+    [disputes]
+  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
