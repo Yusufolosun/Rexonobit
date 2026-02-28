@@ -1,7 +1,7 @@
 // frontend/src/components/Dashboard.tsx
 // Protocol overview: member stats, trust score, vault balance, active loans
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   getTrustScore,
@@ -44,36 +44,39 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadStats = useCallback(async () => {
     if (!address) return;
     setLoading(true);
     setError(null);
-
-    Promise.all([
-      getTrustScore(address).catch(() => 0),
-      getVaultBalance(address).catch(() => 0),
-      getLockedBalance(address).catch(() => 0),
-      getStreakStatus(address).catch(() => 0),
-      getMaxLoanAmount(address).catch(() => 0),
-      isMember(address).catch(() => false),
-      getTotalMembers().catch(() => 0),
-      getTotalCircles().catch(() => 0),
-    ])
-      .then(([trustScore, vaultBalance, lockedBalance, streak, maxLoan, memberStatus, totalMembers, totalCircles]) => {
-        setStats({
-          trustScore: Number(trustScore),
-          vaultBalance: Number(vaultBalance),
-          lockedBalance: Number(lockedBalance),
-          streak: Number(streak),
-          maxLoan: Number(maxLoan),
-          isMember: Boolean(memberStatus),
-          totalMembers: Number(totalMembers),
-          totalCircles: Number(totalCircles),
-        });
-      })
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false));
+    try {
+      const [trustScore, vaultBalance, lockedBalance, streak, maxLoan, memberStatus, totalMembers, totalCircles] = await Promise.all([
+        getTrustScore(address).catch(() => 0),
+        getVaultBalance(address).catch(() => 0),
+        getLockedBalance(address).catch(() => 0),
+        getStreakStatus(address).catch(() => 0),
+        getMaxLoanAmount(address).catch(() => 0),
+        isMember(address).catch(() => false),
+        getTotalMembers().catch(() => 0),
+        getTotalCircles().catch(() => 0),
+      ]);
+      setStats({
+        trustScore: Number(trustScore),
+        vaultBalance: Number(vaultBalance),
+        lockedBalance: Number(lockedBalance),
+        streak: Number(streak),
+        maxLoan: Number(maxLoan),
+        isMember: Boolean(memberStatus),
+        totalMembers: Number(totalMembers),
+        totalCircles: Number(totalCircles),
+      });
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
   }, [address]);
+
+  useEffect(() => { loadStats(); }, [loadStats]);
 
   if (!connected) {
     return (
@@ -102,14 +105,21 @@ export default function Dashboard() {
 
       {stats && (
         <>
-          <div className="grid-3" style={{ marginBottom: "1.5rem" }}>
-            <StatCard label="Trust Score" value={stats.trustScore} unit="/ 1000" />
-            <StatCard label="Vault Balance" value={(stats.vaultBalance / 1_000_000).toFixed(4)} unit="STX" />
-            <StatCard label="Locked Savings" value={(stats.lockedBalance / 1_000_000).toFixed(4)} unit="STX" />
-            <StatCard label="Deposit Streak" value={stats.streak} unit="cycles" />
-            <StatCard label="Max Loan" value={(stats.maxLoan / 1_000_000).toFixed(2)} unit="STX" />
-            <StatCard label="Member Status" value={stats.isMember ? "Active" : "Not Registered"} />
-          </div>
+          {(() => {
+            const cards = [
+              { label: "Trust Score", value: stats.trustScore, unit: "/ 1000" },
+              { label: "Vault Balance", value: (stats.vaultBalance / 1_000_000).toFixed(4), unit: "STX" },
+              { label: "Locked Savings", value: (stats.lockedBalance / 1_000_000).toFixed(4), unit: "STX" },
+              { label: "Deposit Streak", value: stats.streak, unit: "cycles" },
+              { label: "Max Loan", value: (stats.maxLoan / 1_000_000).toFixed(2), unit: "STX" },
+              { label: "Member Status", value: stats.isMember ? "Active" : "Not Registered" },
+            ];
+            return (
+              <div className="grid-3" style={{ marginBottom: "1.5rem" }}>
+                {cards.map(c => <StatCard key={c.label} label={c.label} value={c.value} unit={c.unit} />)}
+              </div>
+            );
+          })()}
 
           <div className="grid-2">
             <StatCard label="Protocol Members" value={stats.totalMembers} />
