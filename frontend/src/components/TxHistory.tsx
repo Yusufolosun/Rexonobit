@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { getNetwork } from '../lib/network';
+import { STACKS_API_URL } from '../lib/network';
+import { explorerTxUrl } from '../lib/explorer';
 import { SkeletonRow } from './SkeletonCard';
 
 interface TxRecord {
@@ -34,9 +35,7 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 async function fetchTxHistory(address: string): Promise<TxRecord[]> {
-  const network = getNetwork();
-  const isMainnet = network.isMainnet();
-  const apiBase = import.meta.env.VITE_STACKS_API_URL ?? (isMainnet ? 'https://api.mainnet.hiro.so' : 'https://api.testnet.hiro.so');
+  const apiBase = STACKS_API_URL;
   try {
     const resp = await fetch(`${apiBase}/extended/v2/addresses/${address}/transactions?limit=30&type[]=contract_call`);
     if (!resp.ok) return [];
@@ -64,12 +63,6 @@ export function TxHistory() {
   const [txs, setTxs] = useState<TxRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'success' | 'failed'>('all');
-
-  const network = getNetwork();
-  const explorerBase = network.isMainnet()
-    ? 'https://explorer.stacks.co/txid'
-    : 'https://explorer.stacks.co/txid';
-  const chain = network.isMainnet() ? 'mainnet' : 'testnet';
 
   const refresh = useCallback(async () => {
     if (!address) return;
@@ -152,7 +145,7 @@ export function TxHistory() {
                   </td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                     <a
-                      href={`${explorerBase}/${tx.txId}?chain=${chain}`}
+                      href={explorerTxUrl(tx.txId)}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ fontSize: '0.75rem' }}
