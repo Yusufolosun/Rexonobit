@@ -14,6 +14,7 @@ import { useFormField } from "../hooks/useFormField";
 import { validateRequired, validateMaxLength, validatePositiveInt } from "../lib/validators";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
+import { useWindowFocus } from "../hooks/useWindowFocus";
 
 interface GovProposal {
   id: number;
@@ -71,6 +72,7 @@ export default function GovernancePanel() {
   }, [address]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useWindowFocus(refresh);
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
