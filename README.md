@@ -296,3 +296,64 @@ npm run dev
 ## License
 
 MIT
+
+---
+
+## Test Suite
+
+All 12 contracts have Clarinet test files in `tests/`:
+
+| File | Description |
+|------|-------------|
+| `cooperative-registry.test.ts` | Member registration, circle create, vouch |
+| `savings-vault.test.ts` | Deposit, withdraw, streak, lock |
+| `trust-score.test.ts` | Reward, decay, tier thresholds |
+| `lending-pool.test.ts` | Fund pool, request, repay, liquidate |
+| `labor-market.test.ts` | Post, bid, accept, complete, attest |
+| `treasury.test.ts` | Deposit, propose spend, vote, execute |
+| `governance.test.ts` | Propose, vote, execute, veto |
+| `rosca.test.ts` | Create, join, start, contribute, payout |
+| `reputation-nft.test.ts` | Mint, tier, ownership |
+| `arbitration.test.ts` | Open, join panel, verdict |
+| `synthetic-credit.test.ts` | Mint, burn, transfer sCREDIT |
+| `protocol-config.test.ts` | Initialize, set-param, admin upgrade |
+| `rosca-lifecycle.test.ts` | ROSCA end-to-end lifecycle |
+| `arbitration-lifecycle.test.ts` | Dispute end-to-end lifecycle |
+| `integration.test.ts` | Cross-contract flows |
+
+Run all tests:
+
+```bash
+clarinet test --costs    # also reports execution costs
+```
+
+
+---
+
+## Test Suite
+
+All 12 contracts have Clarinet test files in `tests/`:
+
+| File | Description |
+|------|-------------|
+| `cooperative-registry.test.ts` | Member registration, circle create, vouch |
+| `savings-vault.test.ts` | Deposit, withdraw, streak, lock |
+| `trust-score.test.ts` | Reward, decay, tier thresholds |
+| `lending-pool.test.ts` | Fund pool, request, repay, liquidate |
+| `labor-market.test.ts` | Post, bid, accept, complete, attest |
+| `treasury.test.ts` | Deposit, propose spend, vote, execute |
+| `governance.test.ts` | Propose, vote, execute, veto |
+| `rosca.test.ts` | Create, join, start, contribute, payout |
+| `reputation-nft.test.ts` | Mint, tier, ownership |
+| `arbitration.test.ts` | Open, join panel, verdict |
+| `synthetic-credit.test.ts` | Mint, burn, transfer sCREDIT |
+| `protocol-config.test.ts` | Initialize, set-param, admin upgrade |
+| `rosca-lifecycle.test.ts` | ROSCA end-to-end lifecycle |
+| `arbitration-lifecycle.test.ts` | Dispute end-to-end lifecycle |
+| `integration.test.ts` | Cross-contract flows |
+
+Run all tests:
+
+```bash
+clarinet test --costs    # also reports execution costs
+```
