@@ -1,9 +1,10 @@
 // frontend/src/components/CircleList.tsx
 // Browse all circles, register member, create circle, join/vouch
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
-import CircleCard, { Circle } from "./CircleCard";
+import CircleCard from "./CircleCard";
+import type { Circle } from "./CircleCard";
 import { SkeletonCard } from "./SkeletonCard";
 import { useWindowFocus } from "../hooks/useWindowFocus";
 import {
@@ -28,10 +29,11 @@ export default function CircleList() {
   const { success: toastSuccess, error: toastError } = useToast();
 
   // New circle form
+  const [displayName, setDisplayName] = useState("");
   const [circleName, setCircleName] = useState("");
   const [circleDesc, setCircleDesc] = useState("");
+  const [circleOpen, setCircleOpen] = useState(true);
   const [minTrust, setMinTrust] = useState("100");
-  const [maxMembers, setMaxMembers] = useState("20");
 
   // Vouch form
   const [vouchTarget, setVouchTarget] = useState("");
@@ -62,15 +64,6 @@ export default function CircleList() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
-
-  const activeCircles = useMemo(
-    () => circles.filter((c) => c.active !== false),
-    [circles]
-  );
-  const inactiveCircles = useMemo(
-    () => circles.filter((c) => c.active === false),
-    [circles]
-  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
@@ -104,10 +97,18 @@ export default function CircleList() {
           <p className="text-muted text-sm" style={{ marginBottom: "0.75rem" }}>
             Register as a REXONOBIT member to access circles, savings vault, loans, and more.
           </p>
+          <div className="form-group" style={{ marginBottom: "0.75rem" }}>
+            <label>Display Name</label>
+            <input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your name"
+            />
+          </div>
           <button
             className="btn-primary"
             disabled={txPending}
-            onClick={() => handle(() => registerMember(), "Registration submitted")}
+            onClick={() => handle(() => registerMember(displayName || address || ""), "Registration submitted")}
           >
             {txPending ? <span className="spinner" /> : "Register as Member"}
           </button>
@@ -127,22 +128,23 @@ export default function CircleList() {
               <label>Description</label>
               <input value={circleDesc} onChange={(e) => setCircleDesc(e.target.value)} placeholder="A circle for…" />
             </div>
-            <div className="grid-2">
-              <div className="form-group">
-                <label>Min Trust Score</label>
-                <input type="number" value={minTrust} onChange={(e) => setMinTrust(e.target.value)} min="0" max="1000" />
-              </div>
-              <div className="form-group">
-                <label>Max Members</label>
-                <input type="number" value={maxMembers} onChange={(e) => setMaxMembers(e.target.value)} min="2" max="100" />
-              </div>
+            <div className="form-group">
+              <label>Min Trust Score (min deposit μSTX)</label>
+              <input type="number" value={minTrust} onChange={(e) => setMinTrust(e.target.value)} min="0" max="1000" />
+            </div>
+            <div className="form-group">
+              <label>Open Registration</label>
+              <select value={String(circleOpen)} onChange={(e) => setCircleOpen(e.target.value === "true")}>
+                <option value="true">Open (anyone can join)</option>
+                <option value="false">Invite only</option>
+              </select>
             </div>
             <button
               className="btn-primary"
               disabled={txPending || !circleName}
               onClick={() =>
                 handle(
-                  () => createCircle(circleName, circleDesc, parseInt(minTrust), parseInt(maxMembers)),
+                  () => createCircle(circleName, circleDesc, circleOpen, parseInt(minTrust)),
                   "Circle created"
                 )
               }
