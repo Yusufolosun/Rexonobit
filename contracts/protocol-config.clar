@@ -137,6 +137,9 @@
   )
 )
 
+;; ─── Governance contract reference ────────────────────────────────────────────
+(define-constant GOVERNANCE .governance)
+
 ;; ─── Write parameter (admin or governance contract only) ──────────────────────
 (define-public (set-param (key (string-ascii 64)) (new-value uint))
   (let (
@@ -145,7 +148,9 @@
     (old-value (get value old-entry))
     (nonce (+ (var-get param-change-nonce) u1))
   )
-    (asserts! (is-eq caller (var-get admin)) ERR-NOT-AUTHORIZED)
+    (asserts! (or (is-eq caller (var-get admin))
+                  (is-eq caller GOVERNANCE))
+              ERR-NOT-AUTHORIZED)
     (asserts! (not (var-get protocol-paused))  ERR-PROTOCOL-PAUSED)
     (asserts! (> new-value u0)                 ERR-ZERO-VALUE)
     (map-set params { key: key }
