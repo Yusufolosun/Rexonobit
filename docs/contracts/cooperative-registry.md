@@ -12,10 +12,22 @@ Member and cooperative circle registry. Controls who is allowed to interact with
 | `create-circle` | public | Create a new cooperative circle |
 | `join-circle` | public | Join an existing circle by ID |
 | `vouch-member` | public | Vouch for another member (increases their endorsement score) |
+| `expel-member` | public | Remove a member from a specific circle (circle admin or governance) |
+| `suspend-member` | public | Protocol-wide ban — admin only |
 | `is-member` | read-only | Returns `true` if address is a registered member |
 | `get-circle` | read-only | Returns circle data for a given circle ID |
 | `get-total-circles` | read-only | Returns total number of circles created |
 | `get-total-members` | read-only | Returns total number of registered members |
+
+## Expulsion vs Suspension
+
+`expel-member` is **circle-scoped**: it removes the target from one circle and
+decrements their `circle-count`, but leaves the global member status as
+`STATUS-ACTIVE`.  The expelled member can still participate in other circles and
+in protocol features that only require global membership.
+
+For a protocol-wide ban, use `suspend-member`, which sets the global status to
+`STATUS-SUSPENDED` and is restricted to the protocol admin.
 
 ## Error Codes
 
