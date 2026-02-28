@@ -17,6 +17,8 @@ import { FormInput } from "./FormInput";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 interface Loan {
   id: number;
@@ -39,7 +41,8 @@ export default function LoanPanel() {
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   // Forms with validation
   const reqCircle = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
@@ -69,14 +72,18 @@ export default function LoanPanel() {
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
 
+  /** Pools with non-zero balances */
+  const activePools = useMemo(() => pools.filter((p) => p.balance > 0), [pools]);
+
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
     try {
       const res = await fn();
       toastSuccess(msg, res.txid);
+      clearError();
       setTimeout(refresh, 4000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -95,6 +102,7 @@ export default function LoanPanel() {
   return (
     <section id="loans" className="page-container" aria-labelledby="loans-title">
       <h2 id="loans-title" className="section-title">Lending Pool</h2>
+      <ErrorAlert error={contractError} onDismiss={clearError} />
       {loading && (
         <div className="grid-3" style={{ marginBottom: "1rem" }}>
           {[1,2,3].map(i => <SkeletonCard key={i} lines={2} height="80px" />)}
