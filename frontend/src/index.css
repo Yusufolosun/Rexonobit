@@ -111,3 +111,9 @@ textarea { resize: vertical; min-height: 80px; }
   background-size: 800px 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
+
+/* Toast fade-in animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
