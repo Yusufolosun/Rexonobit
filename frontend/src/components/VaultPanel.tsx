@@ -7,7 +7,7 @@
  * Powered by the `useVault` hook; uses `useFormField` for validated inputs.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { deposit, lockSavings, withdraw, withdrawLocked } from "../lib/transactions";
 import { useFormField } from "../hooks/useFormField";
@@ -115,7 +115,7 @@ export default function VaultPanel() {
               disabled={txPending}
               aria-busy={txPending}
               aria-label="Withdraw available STX from vault"
-              onClick={() => handle(() => withdraw(), "Withdraw submitted")}
+              onClick={() => handle(() => withdraw(balance), "Withdraw submitted")}
               style={{ flex: 1 }}
             >
               Withdraw Available
@@ -125,7 +125,7 @@ export default function VaultPanel() {
               disabled={txPending}
               aria-busy={txPending}
               aria-label="Withdraw locked STX from vault"
-              onClick={() => handle(() => withdrawLocked(), "Unlock withdraw submitted")}
+              onClick={() => handle(() => withdrawLocked(lockedBalance), "Unlock withdraw submitted")}
               style={{ flex: 1 }}
             >
               Withdraw Locked
