@@ -106,3 +106,60 @@ Clarinet.test({
     info.result.expectOk();
   },
 });
+
+Clarinet.test({
+  name: "rosca: unregistered member cannot create a ROSCA",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    const stranger = accounts.get("wallet_5")!;
+    chain.mineBlock([
+      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
+    ]);
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "create-rosca", [types.uint(1_000_000), types.uint(144), types.uint(3)], stranger.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "rosca: member cannot join the same ROSCA twice",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice, bob } = setupMembers(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "create-rosca", [types.uint(1_000_000), types.uint(144), types.uint(4)], alice.address),
+    ]);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
+    ]);
+    // Bob tries to join again
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "rosca: creator is automatically a member after creating ROSCA",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setupMembers(chain, accounts);
+    chain.mineBlock([
+      Tx.contractCall("rosca", "create-rosca", [types.uint(1_000_000), types.uint(144), types.uint(3)], alice.address),
+    ]);
+    // Creator tries to join their own ROSCA — should fail (already member)
+    const block = chain.mineBlock([
+      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], alice.address),
+    ]);
+    block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "rosca: non-existent ROSCA read returns none",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setupMembers(chain, accounts);
+    const info = chain.callReadOnlyFn("rosca", "get-rosca-info", [types.uint(999)], alice.address);
+    info.result.expectErr();
+  },
+});
