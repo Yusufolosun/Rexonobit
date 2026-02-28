@@ -113,6 +113,12 @@ export async function vouchFor(
   ]);
 }
 
+export async function reinstateMember(target: string): Promise<{ txid: string }> {
+  return callContract(CONTRACT_NAMES.REGISTRY, "reinstate-member", [
+    principalCV(target),
+  ]);
+}
+
 // ─── savings-vault ────────────────────────────────────────────────────────────
 
 export async function initializeVault(): Promise<{ txid: string }> {
