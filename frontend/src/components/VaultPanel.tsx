@@ -5,6 +5,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import { deposit, lockSavings, withdraw, withdrawLocked } from "../lib/transactions";
 import { getVaultBalance, getLockedBalance, getStreakStatus, getLockedUntil } from "../lib/read";
+import { useFormField } from "../hooks/useFormField";
+import { validateSTX, validateBlockCount } from "../lib/validators";
+import { FormInput } from "./FormInput";
 
 interface VaultState {
   balance: number;
@@ -24,6 +27,10 @@ export default function VaultPanel() {
   const [depositAmt, setDepositAmt] = useState("");
   const [lockAmt, setLockAmt] = useState("");
   const [lockBlocks, setLockBlocks] = useState("2016"); // ~14 days in blocks
+
+  const depositField = useFormField("", validateSTX);
+  const lockAmtField = useFormField("", validateSTX);
+  const lockBlocksField = useFormField("2016", (v) => validateBlockCount(v, 144, 52560, "Lock duration"));
 
   const refresh = useCallback(() => {
     if (!address) return;
@@ -94,21 +101,24 @@ export default function VaultPanel() {
         {/* Deposit */}
         <div className="card">
           <h3 style={{ marginBottom: "1rem" }}>Deposit STX</h3>
-          <div className="form-group">
-            <label>Amount (STX)</label>
-            <input
-              type="number"
-              min="0.000001"
-              step="0.000001"
-              value={depositAmt}
-              onChange={(e) => setDepositAmt(e.target.value)}
-              placeholder="0.0"
-            />
-          </div>
+          <FormInput
+            label="Amount (STX)"
+            type="number"
+            min="0.000001"
+            step="0.000001"
+            placeholder="0.0"
+            value={depositField.value}
+            onChange={depositField.onChange}
+            onBlur={depositField.onBlur}
+            error={depositField.error}
+          />
           <button
             className="btn-primary"
-            disabled={txPending || !depositAmt}
-            onClick={() => handle(() => deposit(Math.floor(parseFloat(depositAmt) * 1_000_000)), "Deposit submitted")}
+            disabled={txPending || !depositField.value}
+            onClick={() => {
+              if (!depositField.validate()) return;
+              handle(() => deposit(Math.floor(parseFloat(depositField.value) * 1_000_000)), "Deposit submitted");
+            }}
           >
             {txPending ? <span className="spinner" /> : "Deposit"}
           </button>
@@ -142,41 +152,42 @@ export default function VaultPanel() {
         <div className="card" style={{ gridColumn: "1 / -1" }}>
           <h3 style={{ marginBottom: "1rem" }}>Lock Savings (earn bonus trust points)</h3>
           <div className="grid-2">
-            <div className="form-group">
-              <label>Amount to Lock (STX)</label>
-              <input
-                type="number"
-                min="0.000001"
-                step="0.000001"
-                value={lockAmt}
-                onChange={(e) => setLockAmt(e.target.value)}
-                placeholder="0.0"
-              />
-            </div>
-            <div className="form-group">
-              <label>Lock Duration (blocks)</label>
-              <input
-                type="number"
-                min="144"
-                step="144"
-                value={lockBlocks}
-                onChange={(e) => setLockBlocks(e.target.value)}
-                placeholder="2016"
-              />
-              <span className="text-muted" style={{ fontSize: "0.75rem" }}>
-                ≈ {Math.round(parseInt(lockBlocks || "0") / 144)} days
-              </span>
-            </div>
+            <FormInput
+              label="Amount to Lock (STX)"
+              type="number"
+              min="0.000001"
+              step="0.000001"
+              placeholder="0.0"
+              value={lockAmtField.value}
+              onChange={lockAmtField.onChange}
+              onBlur={lockAmtField.onBlur}
+              error={lockAmtField.error}
+            />
+            <FormInput
+              label="Lock Duration (blocks)"
+              type="number"
+              min="144"
+              step="144"
+              placeholder="2016"
+              hint={`≈ ${Math.round(parseInt(lockBlocksField.value || "0") / 144)} days`}
+              value={lockBlocksField.value}
+              onChange={lockBlocksField.onChange}
+              onBlur={lockBlocksField.onBlur}
+              error={lockBlocksField.error}
+            />
           </div>
           <button
             className="btn-primary"
-            disabled={txPending || !lockAmt || !lockBlocks}
-            onClick={() =>
+            disabled={txPending || !lockAmtField.value || !lockBlocksField.value}
+            onClick={() => {
+              const a = lockAmtField.validate();
+              const b = lockBlocksField.validate();
+              if (!a || !b) return;
               handle(
-                () => lockSavings(Math.floor(parseFloat(lockAmt) * 1_000_000), parseInt(lockBlocks)),
+                () => lockSavings(Math.floor(parseFloat(lockAmtField.value) * 1_000_000), parseInt(lockBlocksField.value)),
                 "Lock submitted"
-              )
-            }
+              );
+            }}
           >
             {txPending ? <span className="spinner" /> : "Lock Savings"}
           </button>
