@@ -1,6 +1,12 @@
 // frontend/src/components/ProtocolStats.tsx
 // Protocol-wide aggregate statistics panel
 
+/**
+ * ProtocolStats — protocol-level aggregate metrics.
+ * Displays total members, active circles, lending pool balance,
+ * and treasury balance. Refreshes on mount and window focus.
+ */
+
 import React, { useCallback, useEffect, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { getTotalMembers, getTotalCircles, getPoolBalance, getTreasuryBalance } from "../lib/read";
