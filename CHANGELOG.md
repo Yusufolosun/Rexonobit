@@ -47,6 +47,17 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.5.0] — UI component library expansion
+
+### Added
+- `ProgressBar` component — accessible progress bar with `role="progressbar"` and full ARIA attribute set
+- `AddressCard` component — Stacks address chip with copy-to-clipboard using `useCopyToClipboard`
+- `StatCard` component — metric tile with skeleton loading state and accent colour stripe
+- `NotificationBell` component — bell icon with unread-count badge and accessible dropdown
+- Reference docs for all four new components under `docs/components/`
+
+---
+
 ## [0.1.0] — Initial scaffold
 
 ### Added
