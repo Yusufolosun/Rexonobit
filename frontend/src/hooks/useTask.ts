@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getTask } from '../lib/read';
+import type { TaskStatus } from '../lib/types';
 
 export interface TaskData {
   id: number;
