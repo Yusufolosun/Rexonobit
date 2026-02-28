@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { getTrustScoreFull } from "../lib/read";
+import { SkeletonCard } from "./SkeletonCard";
 
 interface TrustData {
   score: number;
@@ -50,7 +51,7 @@ export default function TrustScoreCard({ address }: Props) {
     return { label: "Starter", color: "#64748b" };
   };
 
-  if (loading) return <div className="card"><span className="spinner" /> Loading trust score…</div>;
+  if (loading) return <SkeletonCard lines={6} height="220px" />;
   if (error) return <div className="card alert alert-error">{error}</div>;
   if (!data) return null;
 
