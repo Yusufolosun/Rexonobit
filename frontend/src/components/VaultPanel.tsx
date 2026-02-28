@@ -16,12 +16,15 @@ import { FormInput } from "./FormInput";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
 import { useVault } from "../hooks/useVault";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 export default function VaultPanel() {
   const { address, connected } = useWallet();
   const { balance, lockedBalance, lockedUntil, streak, loading: loadingData, refresh } = useVault(address);
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   const depositField = useFormField("", validateSTX);
   const lockAmtField = useFormField("", validateSTX);
@@ -34,9 +37,10 @@ export default function VaultPanel() {
     try {
       const res = await fn();
       toastSuccess(`${msg} submitted`, res.txid);
+      clearError();
       setTimeout(refresh, 3000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -49,6 +53,8 @@ export default function VaultPanel() {
   return (
     <section id="vault" className="page-container" aria-labelledby="vault-title">
       <h2 id="vault-title" className="section-title">Savings Vault</h2>
+
+      <ErrorAlert error={contractError} onDismiss={clearError} />
 
       {loadingData && <div role="status" aria-live="polite" style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" aria-hidden="true" /> Refreshing…</div>}
 
