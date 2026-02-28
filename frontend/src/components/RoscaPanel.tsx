@@ -15,6 +15,7 @@ import { getRosca } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validateBlockCount, validateMaxLength, validatePrincipalList } from "../lib/validators";
 import { FormInput, FormTextarea } from "./FormInput";
+import { SkeletonCard } from "./SkeletonCard";
 
 interface RoscaData {
   id: number;
@@ -106,7 +107,11 @@ export default function RoscaPanel() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
-      {loading && <div style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" /> Loading…</div>}
+      {loading && (
+        <div className="grid-2" style={{ marginBottom: "1rem" }}>
+          {[1,2,3,4].map(i => <SkeletonCard key={i} lines={3} height="100px" />)}
+        </div>
+      )}
 
       {/* Create ROSCA */}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
