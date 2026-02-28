@@ -8,7 +8,12 @@
  * variable (mainnet | testnet | devnet). Defaults to testnet.
  */
 
-import { StacksTestnet, StacksMainnet, StacksDevnet } from "@stacks/network";
+import {
+  STACKS_MAINNET,
+  STACKS_TESTNET,
+  STACKS_DEVNET,
+  type StacksNetwork,
+} from "@stacks/network";
 
 type NetworkType = "mainnet" | "testnet" | "devnet";
 
@@ -19,17 +24,18 @@ export const STACKS_API_URL =
   import.meta.env.VITE_STACKS_API_URL || "https://api.testnet.hiro.so";
 
 /**
- * Returns a Stacks network instance for the currently configured environment.
- * @returns StacksMainnet | StacksTestnet | StacksDevnet
+ * Returns a Stacks network object for the currently configured environment.
+ * The `client.baseUrl` is overridden from the VITE_STACKS_API_URL env var.
+ * @returns StacksNetwork
  */
-export function getNetwork() {
+export function getNetwork(): StacksNetwork {
   switch (NETWORK_TYPE) {
     case "mainnet":
-      return new StacksMainnet({ url: STACKS_API_URL });
+      return { ...STACKS_MAINNET, client: { baseUrl: STACKS_API_URL } };
     case "devnet":
-      return new StacksDevnet({ url: "http://localhost:3999" });
+      return { ...STACKS_DEVNET, client: { baseUrl: "http://localhost:3999" } };
     default:
-      return new StacksTestnet({ url: STACKS_API_URL });
+      return { ...STACKS_TESTNET, client: { baseUrl: STACKS_API_URL } };
   }
 }
 
