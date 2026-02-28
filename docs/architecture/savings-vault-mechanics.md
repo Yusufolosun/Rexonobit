@@ -47,6 +47,14 @@ Member
 
 Lock period is chosen by the depositor at deposit time and stored on-chain.
 
+### Lock-Extension-Only Rule
+
+Subsequent calls to `lock-savings` must specify a lock period whose resulting
+`unlock-at` (`block-height + lock-blocks`) is **at or beyond** the existing
+`lock-until` value.  Attempts to shorten an active lock are rejected with
+`ERR-LOCK-SHORTENING (u210)`.  This prevents a depositor from circumventing a
+long-term commitment by overwriting it with a shorter lock.
+
 ---
 
 ## Withdrawal Rules
@@ -99,6 +107,7 @@ Where `blocks_per_year ≈ 52560` (144 blocks/day × 365).
 | 1203 | `ERR_ZERO_DEPOSIT` | Deposit amount is zero |
 | 1204 | `ERR_NO_DEPOSIT` | No active deposit found |
 | 1205 | `ERR_TRANSFER_FAILED` | STX transfer failed |
+| 210 | `ERR_LOCK_SHORTENING` | New lock would shorten an existing lock period |
 
 ---
 
