@@ -99,8 +99,8 @@ export default function TaskBoard() {
   const trunc = (addr: string) => addr ? `${addr.slice(0, 8)}…${addr.slice(-4)}` : "—";
 
   return (
-    <section id="tasks" className="page-container">
-      <h2 className="section-title">Labor Market</h2>
+    <section id="tasks" className="page-container" aria-labelledby="tasks-title">
+      <h2 id="tasks-title" className="section-title">Labor Market</h2>
 
       {/* Post Task */}}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
