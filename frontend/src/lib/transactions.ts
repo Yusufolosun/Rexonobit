@@ -24,7 +24,7 @@ import {
   noneCV,
   listCV,
   type ClarityValue,
-  type StacksTransaction,
+  type StacksTransactionWire,
 } from "@stacks/transactions";
 import { network, DEPLOYER_ADDRESS, CONTRACT_NAMES } from "./network";
 import { userSession } from "./wallet";
@@ -40,7 +40,7 @@ async function callContract(
   functionName: string,
   functionArgs: ClarityValue[],
   postConditions: never[] = []
-): Promise<string> {
+): Promise<{ txid: string }> {
   const txOptions = {
     contractAddress: DEPLOYER_ADDRESS,
     contractName,
@@ -52,17 +52,17 @@ async function callContract(
     postConditionMode: PostConditionMode.Allow,
     postConditions,
   };
-  const tx: StacksTransaction = await makeContractCall(txOptions);
+  const tx: StacksTransactionWire = await makeContractCall(txOptions);
   const result = await broadcastTransaction({ transaction: tx, network });
   if ("error" in result) {
     throw new Error(`Broadcast failed: ${result.error} — ${result.reason}`);
   }
-  return result.txid;
+  return { txid: result.txid };
 }
 
 // ─── cooperative-registry ─────────────────────────────────────────────────────
 
-export async function registerMember(displayName: string): Promise<string> {
+export async function registerMember(displayName: string): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.REGISTRY, "register-member", [
     stringUtf8CV(displayName),
   ]);
@@ -73,7 +73,7 @@ export async function createCircle(
   description: string,
   isOpen: boolean,
   minDeposit: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.REGISTRY, "create-circle", [
     stringUtf8CV(name),
     stringUtf8CV(description),
@@ -82,7 +82,7 @@ export async function createCircle(
   ]);
 }
 
-export async function requestJoin(circleId: number): Promise<string> {
+export async function requestJoin(circleId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.REGISTRY, "request-join", [
     uintCV(circleId),
   ]);
@@ -91,7 +91,7 @@ export async function requestJoin(circleId: number): Promise<string> {
 export async function vouchFor(
   circleId: number,
   applicant: string
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.REGISTRY, "vouch-for", [
     uintCV(circleId),
     principalCV(applicant),
@@ -100,11 +100,11 @@ export async function vouchFor(
 
 // ─── savings-vault ────────────────────────────────────────────────────────────
 
-export async function initializeVault(): Promise<string> {
+export async function initializeVault(): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "initialize-vault", []);
 }
 
-export async function deposit(amount: number): Promise<string> {
+export async function deposit(amount: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "deposit", [
     uintCV(amount),
   ]);
@@ -113,20 +113,20 @@ export async function deposit(amount: number): Promise<string> {
 export async function lockSavings(
   amount: number,
   lockBlocks: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "lock-savings", [
     uintCV(amount),
     uintCV(lockBlocks),
   ]);
 }
 
-export async function withdraw(amount: number): Promise<string> {
+export async function withdraw(amount: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "withdraw", [
     uintCV(amount),
   ]);
 }
 
-export async function withdrawLocked(amount: number): Promise<string> {
+export async function withdrawLocked(amount: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "withdraw-locked", [
     uintCV(amount),
   ]);
@@ -137,7 +137,7 @@ export async function withdrawLocked(amount: number): Promise<string> {
 export async function fundPool(
   circleId: number,
   amount: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LENDING_POOL, "fund-pool", [
     uintCV(circleId),
     uintCV(amount),
@@ -147,7 +147,7 @@ export async function fundPool(
 export async function requestLoan(
   circleId: number,
   amount: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LENDING_POOL, "request-loan", [
     uintCV(circleId),
     uintCV(amount),
@@ -157,14 +157,14 @@ export async function requestLoan(
 export async function repayLoan(
   loanId: number,
   amount: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LENDING_POOL, "repay", [
     uintCV(loanId),
     uintCV(amount),
   ]);
 }
 
-export async function liquidateDefaulter(loanId: number): Promise<string> {
+export async function liquidateDefaulter(loanId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LENDING_POOL, "liquidate-defaulter", [
     uintCV(loanId),
   ]);
@@ -177,7 +177,7 @@ export async function createRosca(
   contribution: number,
   memberCount: number,
   cycleBlocks: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "create-rosca", [
     stringUtf8CV(name),
     uintCV(contribution),
@@ -186,22 +186,22 @@ export async function createRosca(
   ]);
 }
 
-export async function joinRosca(roscaId: number): Promise<string> {
+export async function joinRosca(roscaId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "join-rosca", [uintCV(roscaId)]);
 }
 
-export async function contribute(roscaId: number): Promise<string> {
+export async function contribute(roscaId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "contribute", [uintCV(roscaId)]);
 }
 
-export async function payout(roscaId: number): Promise<string> {
+export async function payout(roscaId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "payout", [uintCV(roscaId)]);
 }
 
 export async function setPayoutOrder(
   roscaId: number,
   order: string[]
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "set-payout-order", [
     uintCV(roscaId),
     listCV(order.map((addr) => principalCV(addr))),
@@ -215,7 +215,7 @@ export async function postTask(
   title: string,
   description: string,
   bounty: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LABOR_MARKET, "post-task", [
     uintCV(circleId),
     stringUtf8CV(title),
@@ -227,7 +227,7 @@ export async function postTask(
 export async function bidTask(
   taskId: number,
   message: string
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LABOR_MARKET, "bid-task", [
     uintCV(taskId),
     stringUtf8CV(message),
@@ -237,14 +237,14 @@ export async function bidTask(
 export async function acceptBid(
   taskId: number,
   worker: string
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LABOR_MARKET, "accept-bid", [
     uintCV(taskId),
     principalCV(worker),
   ]);
 }
 
-export async function submitCompletion(taskId: number): Promise<string> {
+export async function submitCompletion(taskId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LABOR_MARKET, "submit-completion", [
     uintCV(taskId),
   ]);
@@ -253,14 +253,14 @@ export async function submitCompletion(taskId: number): Promise<string> {
 export async function attestTask(
   taskId: number,
   approved: boolean
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LABOR_MARKET, "attest", [
     uintCV(taskId),
     boolCV(approved),
   ]);
 }
 
-export async function disputeTask(taskId: number): Promise<string> {
+export async function disputeTask(taskId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.LABOR_MARKET, "dispute-task", [
     uintCV(taskId),
   ]);
@@ -271,7 +271,7 @@ export async function disputeTask(taskId: number): Promise<string> {
 export async function depositToTreasury(
   circleId: number,
   amount: number
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.TREASURY, "deposit-to-treasury", [
     uintCV(circleId),
     uintCV(amount),
@@ -283,7 +283,7 @@ export async function proposeSpend(
   recipient: string,
   amount: number,
   description: string
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.TREASURY, "propose-spend", [
     uintCV(circleId),
     principalCV(recipient),
@@ -295,14 +295,14 @@ export async function proposeSpend(
 export async function voteOnProposal(
   proposalId: number,
   approve: boolean
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.TREASURY, "vote", [
     uintCV(proposalId),
     boolCV(approve),
   ]);
 }
 
-export async function executeSpend(proposalId: number): Promise<string> {
+export async function executeSpend(proposalId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.TREASURY, "execute-spend", [
     uintCV(proposalId),
   ]);
@@ -318,7 +318,7 @@ export async function createProposal(
   paramKey: string,
   paramValue: number,
   target: string | null
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.GOVERNANCE, "propose", [
     uintCV(circleId),
     uintCV(proposalType),
@@ -333,14 +333,14 @@ export async function createProposal(
 export async function voteOnGovProposal(
   proposalId: number,
   approve: boolean
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.GOVERNANCE, "vote", [
     uintCV(proposalId),
     boolCV(approve),
   ]);
 }
 
-export async function executeGovProposal(proposalId: number): Promise<string> {
+export async function executeGovProposal(proposalId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.GOVERNANCE, "execute-proposal", [
     uintCV(proposalId),
   ]);
@@ -353,7 +353,7 @@ export async function openDispute(
   circleId: number,
   description: string,
   evidence: string
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ARBITRATION, "open-dispute", [
     principalCV(respondent),
     uintCV(circleId),
@@ -362,7 +362,7 @@ export async function openDispute(
   ]);
 }
 
-export async function joinPanel(disputeId: number): Promise<string> {
+export async function joinPanel(disputeId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ARBITRATION, "join-panel", [
     uintCV(disputeId),
   ]);
@@ -372,7 +372,7 @@ export async function submitVerdict(
   disputeId: number,
   verdict: number,
   reasoning: string
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ARBITRATION, "submit-verdict", [
     uintCV(disputeId),
     uintCV(verdict),
@@ -380,7 +380,7 @@ export async function submitVerdict(
   ]);
 }
 
-export async function closeDispute(disputeId: number): Promise<string> {
+export async function closeDispute(disputeId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ARBITRATION, "close-dispute", [
     uintCV(disputeId),
   ]);
@@ -388,13 +388,13 @@ export async function closeDispute(disputeId: number): Promise<string> {
 
 // ─── synthetic-credit ─────────────────────────────────────────────────────────
 
-export async function mintSCredit(amount: number): Promise<string> {
+export async function mintSCredit(amount: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SYNTHETIC_CREDIT, "mint-scredit", [
     uintCV(amount),
   ]);
 }
 
-export async function burnSCredit(amount: number): Promise<string> {
+export async function burnSCredit(amount: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SYNTHETIC_CREDIT, "burn-scredit", [
     uintCV(amount),
   ]);
@@ -403,7 +403,7 @@ export async function burnSCredit(amount: number): Promise<string> {
 export async function transferSCredit(
   amount: number,
   recipient: string
-): Promise<string> {
+): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.SYNTHETIC_CREDIT, "transfer-scredit", [
     uintCV(amount),
     principalCV(recipient),
