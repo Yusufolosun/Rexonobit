@@ -1,6 +1,13 @@
 // frontend/src/lib/explorer.ts
 // Stacks Explorer URL helpers — mainnet and testnet aware
 
+/**
+ * @module explorer
+ * @description Network-aware Stacks Explorer URL generators.
+ * All helpers read `VITE_STACKS_NETWORK` to produce the correct chain param.
+ * Use these instead of hardcoding explorer URLs in components or toasts.
+ */
+
 const NETWORK_TYPE = (import.meta.env.VITE_STACKS_NETWORK || "testnet") as string;
 
 const EXPLORER_BASE =
