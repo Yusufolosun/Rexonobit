@@ -21,6 +21,8 @@ import { validateRequired, validateMaxLength, validatePositiveInt } from "../lib
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 interface GovProposal {
   id: number;
@@ -49,7 +51,8 @@ export default function GovernancePanel() {
   const [proposals, setProposals] = useState<GovProposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   // Propose form with validation
   const [propType, setPropType] = useState("PARAM-CHANGE");
@@ -94,9 +97,10 @@ export default function GovernancePanel() {
     try {
       const res = await fn();
       toastSuccess(msg, res.txid);
+      clearError();
       setTimeout(refresh, 4000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -123,6 +127,7 @@ export default function GovernancePanel() {
   return (
     <section id="governance" className="page-container" aria-labelledby="governance-title">
       <h2 id="governance-title" className="section-title">Governance</h2>
+      <ErrorAlert error={contractError} onDismiss={clearError} />
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
         Trust-weighted voting. Each member's vote weight equals their trust score, capped at 20% of total weight.
       </p>
