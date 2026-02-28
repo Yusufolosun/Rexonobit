@@ -373,3 +373,21 @@ clarinet test --costs    # also reports execution costs
 | `release.yml` | Tag `v*` | type-check → build → zip → GitHub Release |
 
 All workflows live in `.github/workflows/`.
+
+
+---
+
+## Configuration
+
+Copy `frontend/.env.example` to `frontend/.env` and set:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_STACKS_NETWORK` | Yes | `testnet`, `mainnet`, or `devnet` |
+| `VITE_DEPLOYER_ADDRESS` | Yes | STX address that deployed all 12 contracts |
+| `VITE_APP_NAME` | No | App name shown in Hiro Wallet pop-ups |
+| `VITE_APP_ICON_URL` | No | App icon URL for wallet pop-ups |
+| `VITE_STACKS_API_URL` | No | Override Stacks API node (default: Hiro public testnet) |
+| `VITE_EXPLORER_URL` | No | Explorer base URL for tx and address links |
+
+> ⚠ Never commit `.env` — it is gitignored.
