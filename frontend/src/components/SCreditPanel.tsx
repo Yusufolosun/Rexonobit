@@ -7,6 +7,7 @@ import { mintSCredit, burnSCredit, transferSCredit } from "../lib/transactions";
 import { getSCreditBalance, getCreditLimit, getTrustScore, getLockedBalance } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePrincipal } from "../lib/validators";
+import { SkeletonCard } from "./SkeletonCard";
 
 interface CreditState {
   balance: number;
@@ -97,7 +98,11 @@ export default function SCreditPanel() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
-      {loading && <div style={{ display: "flex", gap: ".5rem", alignItems: "center" }}><span className="spinner" /> Loading…</div>}
+      {loading && (
+        <div className="grid-3" style={{ marginBottom: "2rem" }}>
+          {[1, 2, 3].map((i) => <SkeletonCard key={i} lines={3} height="90px" />)}
+        </div>
+      )}
 
       {state && (
         <>
