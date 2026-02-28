@@ -137,3 +137,42 @@ textarea { resize: vertical; min-height: 80px; }
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* =====================================================================
+   RESPONSIVE LAYOUT — Mobile-first breakpoints
+   ===================================================================== */
+
+/* Tablet: ≤ 768px */
+@media (max-width: 768px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+
+  .page-container { padding: 1rem 1rem; }
+
+  .section-title { font-size: 1.1rem; }
+
+  .card { padding: 1rem; }
+
+  /* Stat cards stack on tablet */
+  .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* Mobile: ≤ 480px */
+@media (max-width: 480px) {
+  body { font-size: 14px; }
+
+  .page-container { padding: 0.75rem 0.75rem; }
+
+  .grid-4 { grid-template-columns: 1fr !important; }
+
+  button { font-size: 0.85rem; padding: 0.5rem 0.9rem; }
+
+  /* Full-width buttons on mobile */
+  .btn-primary, .btn-secondary, .btn-danger {
+    width: 100%;
+    text-align: center;
+  }
+
+  .section-title { font-size: 1rem; }
+}
+
