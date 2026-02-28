@@ -13,6 +13,26 @@
   --color-warning:    #f59e0b;
   --radius:           0.75rem;
   --font-mono:        "JetBrains Mono", "Fira Code", monospace;
+  /* semantic aliases */
+  --bg-panel:         var(--color-surface);
+  --accent:           var(--color-primary);
+  --text-muted:       var(--color-text-muted);
+}
+
+/* Light theme — applied when <html data-theme="light"> */
+[data-theme="light"] {
+  --color-bg:         #f4f4f5;
+  --color-surface:    #ffffff;
+  --color-surface-2:  #e8e8ea;
+  --color-border:     #d1d1d6;
+  --color-primary:    #d97706;
+  --color-primary-dk: #b45309;
+  --color-accent:     #5b3de8;
+  --color-text:       #111111;
+  --color-text-muted: #666;
+  --color-success:    #16a34a;
+  --color-error:      #dc2626;
+  --color-warning:    #d97706;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
