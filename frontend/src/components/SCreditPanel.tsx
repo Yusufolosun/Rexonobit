@@ -1,6 +1,13 @@
 // frontend/src/components/SCreditPanel.tsx
 // sCREDIT synthetic credit token: mint, burn, transfer, view credit limit
 
+/**
+ * SCreditPanel — synthetic credit (sCREDIT) interface.
+ * Mint sCREDIT against locked savings collateral, burn to repay,
+ * transfer to peers. Credit limit is determined by trust score ×
+ * locked savings balance via the synthetic-credit contract.
+ */
+
 import React, { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { mintSCredit, burnSCredit, transferSCredit } from "../lib/transactions";
