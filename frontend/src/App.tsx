@@ -15,37 +15,40 @@ import SCreditPanel from "./components/SCreditPanel";
 import MemberProfile from "./components/MemberProfile";
 import BadgeGallery from "./components/BadgeGallery";
 import TxHistory from "./components/TxHistory";
+import ErrorBoundary from "./components/ErrorBoundary";
+
+const divider = <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />;
 
 function App() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-background)" }}>
       <Navbar />
       <main style={{ paddingTop: "72px" }}>
-        <Dashboard />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <CircleList />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <VaultPanel />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <LoanPanel />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <RoscaPanel />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <TaskBoard />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <TreasuryPanel />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <GovernancePanel />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <ArbitrationPanel />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <SCreditPanel />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <MemberProfile />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <BadgeGallery />
-        <div style={{ height: "1px", background: "var(--color-border)", margin: "0 1.5rem" }} />
-        <TxHistory />
+        <ErrorBoundary><Dashboard /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><CircleList /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><VaultPanel /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><LoanPanel /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><RoscaPanel /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><TaskBoard /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><TreasuryPanel /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><GovernancePanel /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><ArbitrationPanel /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><SCreditPanel /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><MemberProfile /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><BadgeGallery /></ErrorBoundary>
+        {divider}
+        <ErrorBoundary><TxHistory /></ErrorBoundary>
         <footer style={{ textAlign: "center", padding: "3rem 1.5rem", color: "var(--color-text-muted)", fontSize: "0.82rem" }}>
           REXONOBIT — Bitcoin-Native Micro-Economy Protocol on Stacks · Open Source
         </footer>
