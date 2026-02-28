@@ -1,5 +1,5 @@
 import { useToast } from '../context/ToastContext';
-import { getNetwork } from '../lib/network';
+import { explorerTxUrl } from '../lib/explorer';
 
 const TYPE_COLOR: Record<string, string> = {
   success: 'var(--color-success)',
@@ -17,7 +17,6 @@ const TYPE_ICON: Record<string, string> = {
 
 export function ToastContainer() {
   const { toasts, removeToast } = useToast();
-  const network = getNetwork().isMainnet() ? 'mainnet' : 'testnet';
 
   if (toasts.length === 0) return null;
 
@@ -60,7 +59,7 @@ export function ToastContainer() {
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text)', lineHeight: 1.4 }}>{toast.message}</p>
             {toast.txId && (
               <a
-                href={`https://explorer.stacks.co/txid/${toast.txId}?chain=${network}`}
+                href={explorerTxUrl(toast.txId)}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ fontSize: '0.75rem', color: TYPE_COLOR[toast.type], display: 'block', marginTop: '0.25rem' }}
