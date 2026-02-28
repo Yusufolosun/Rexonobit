@@ -20,6 +20,8 @@ type NetworkType = "mainnet" | "testnet" | "devnet";
 const NETWORK_TYPE = (import.meta.env.VITE_STACKS_NETWORK ||
   "testnet") as NetworkType;
 
+export { NETWORK_TYPE };
+
 export const STACKS_API_URL =
   import.meta.env.VITE_STACKS_API_URL || "https://api.testnet.hiro.so";
 

@@ -14,6 +14,7 @@ import { openContractCall } from "@stacks/connect";
 import {
   AnchorMode,
   PostConditionMode,
+  Pc,
   uintCV,
   stringUtf8CV,
   stringAsciiCV,
@@ -23,16 +24,36 @@ import {
   noneCV,
   listCV,
   type ClarityValue,
+  type PostCondition,
 } from "@stacks/transactions";
-import { network, DEPLOYER_ADDRESS, CONTRACT_NAMES } from "./network";
+import { network, DEPLOYER_ADDRESS, CONTRACT_NAMES, NETWORK_TYPE } from "./network";
+import { getConnectedAddress } from "./wallet";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Returns the connected wallet address or throws. */
+function requireSender(): string {
+  const addr = getConnectedAddress(NETWORK_TYPE);
+  if (!addr) throw new Error("Wallet not connected");
+  return addr;
+}
+
+/** Build a "sender will send at most X uSTX" post-condition. */
+function senderWillSendLte(amount: number): PostCondition {
+  return Pc.principal(requireSender()).willSendLte(amount).ustx();
+}
+
+/** Build a "contract will send at most X uSTX" post-condition. */
+function contractWillSendLte(contractName: string, amount: number): PostCondition {
+  return Pc.principal(`${DEPLOYER_ADDRESS}.${contractName}`).willSendLte(amount).ustx();
+}
 
 async function callContract(
   contractName: string,
   functionName: string,
   functionArgs: ClarityValue[],
-  postConditions: never[] = []
+  postConditions: PostCondition[] = [],
+  mode: PostConditionMode = PostConditionMode.Deny
 ): Promise<{ txid: string }> {
   return new Promise((resolve, reject) => {
     openContractCall({
@@ -42,7 +63,7 @@ async function callContract(
       functionArgs,
       network,
       anchorMode: AnchorMode.Any,
-      postConditionMode: PostConditionMode.Allow,
+      postConditionMode: mode,
       postConditions,
       onFinish: (data) => {
         resolve({ txid: data.txId });
@@ -99,31 +120,38 @@ export async function initializeVault(): Promise<{ txid: string }> {
 }
 
 export async function deposit(amount: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "deposit", [
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.SAVINGS_VAULT, "deposit",
+    [uintCV(amount)],
+    [senderWillSendLte(amount)]
+  );
 }
 
 export async function lockSavings(
   amount: number,
   lockBlocks: number
 ): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "lock-savings", [
-    uintCV(amount),
-    uintCV(lockBlocks),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.SAVINGS_VAULT, "lock-savings",
+    [uintCV(amount), uintCV(lockBlocks)],
+    [senderWillSendLte(amount)]
+  );
 }
 
 export async function withdraw(amount: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "withdraw", [
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.SAVINGS_VAULT, "withdraw",
+    [uintCV(amount)],
+    [contractWillSendLte(CONTRACT_NAMES.SAVINGS_VAULT, amount)]
+  );
 }
 
 export async function withdrawLocked(amount: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.SAVINGS_VAULT, "withdraw-locked", [
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.SAVINGS_VAULT, "withdraw-locked",
+    [uintCV(amount)],
+    [contractWillSendLte(CONTRACT_NAMES.SAVINGS_VAULT, amount)]
+  );
 }
 
 // ─── lending-pool ─────────────────────────────────────────────────────────────
@@ -132,10 +160,11 @@ export async function fundPool(
   circleId: number,
   amount: number
 ): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.LENDING_POOL, "fund-pool", [
-    uintCV(circleId),
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.LENDING_POOL, "fund-pool",
+    [uintCV(circleId), uintCV(amount)],
+    [senderWillSendLte(amount)]
+  );
 }
 
 export async function requestLoan(
@@ -152,16 +181,21 @@ export async function repayLoan(
   loanId: number,
   amount: number
 ): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.LENDING_POOL, "repay", [
-    uintCV(loanId),
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.LENDING_POOL, "repay",
+    [uintCV(loanId), uintCV(amount)],
+    [senderWillSendLte(amount)]
+  );
 }
 
+// Amount redistributed is determined on-chain; must allow contract transfers
 export async function liquidateDefaulter(loanId: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.LENDING_POOL, "liquidate-defaulter", [
-    uintCV(loanId),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.LENDING_POOL, "liquidate-defaulter",
+    [uintCV(loanId)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
 // ─── rosca ────────────────────────────────────────────────────────────────────
@@ -188,12 +222,24 @@ export async function lockAndStart(roscaId: number): Promise<{ txid: string }> {
   return callContract(CONTRACT_NAMES.ROSCA, "lock-and-start", [uintCV(roscaId)]);
 }
 
+// Contribution amount is stored on-chain; cannot build a precise post-condition
 export async function contribute(roscaId: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.ROSCA, "contribute", [uintCV(roscaId)]);
+  return callContract(
+    CONTRACT_NAMES.ROSCA, "contribute",
+    [uintCV(roscaId)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
+// Payout amount depends on on-chain pool size; must allow contract transfers
 export async function payout(roscaId: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.ROSCA, "payout", [uintCV(roscaId)]);
+  return callContract(
+    CONTRACT_NAMES.ROSCA, "payout",
+    [uintCV(roscaId)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
 export async function setPayoutOrder(
@@ -214,12 +260,11 @@ export async function postTask(
   description: string,
   bounty: number
 ): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.LABOR_MARKET, "post-task", [
-    uintCV(circleId),
-    stringUtf8CV(title),
-    stringUtf8CV(description),
-    uintCV(bounty),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.LABOR_MARKET, "post-task",
+    [uintCV(circleId), stringUtf8CV(title), stringUtf8CV(description), uintCV(bounty)],
+    [senderWillSendLte(bounty)]
+  );
 }
 
 export async function bidTask(
@@ -264,10 +309,14 @@ export async function disputeTask(taskId: number): Promise<{ txid: string }> {
   ]);
 }
 
+// Bounty refund amount is determined on-chain; must allow contract transfers
 export async function cancelTask(taskId: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.LABOR_MARKET, "cancel-task", [
-    uintCV(taskId),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.LABOR_MARKET, "cancel-task",
+    [uintCV(taskId)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
 // ─── treasury ─────────────────────────────────────────────────────────────────
@@ -276,10 +325,11 @@ export async function depositToTreasury(
   circleId: number,
   amount: number
 ): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.TREASURY, "deposit-to-treasury", [
-    uintCV(circleId),
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.TREASURY, "deposit-to-treasury",
+    [uintCV(circleId), uintCV(amount)],
+    [senderWillSendLte(amount)]
+  );
 }
 
 export async function proposeSpend(
@@ -306,10 +356,14 @@ export async function voteOnProposal(
   ]);
 }
 
+// Proposal spend amount is determined on-chain; must allow contract transfers
 export async function executeSpend(proposalId: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.TREASURY, "execute-spend", [
-    uintCV(proposalId),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.TREASURY, "execute-spend",
+    [uintCV(proposalId)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
 // ─── governance ───────────────────────────────────────────────────────────────
@@ -358,18 +412,19 @@ export async function vetoGovProposal(proposalId: number): Promise<{ txid: strin
 
 // ─── arbitration ──────────────────────────────────────────────────────────────
 
+// Arbitration fee is read from on-chain config; cannot build a precise post-condition
 export async function openDispute(
   respondent: string,
   circleId: number,
   description: string,
   evidence: string
 ): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.ARBITRATION, "open-dispute", [
-    principalCV(respondent),
-    uintCV(circleId),
-    stringUtf8CV(description),
-    stringUtf8CV(evidence),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.ARBITRATION, "open-dispute",
+    [principalCV(respondent), uintCV(circleId), stringUtf8CV(description), stringUtf8CV(evidence)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
 export async function joinPanel(disputeId: number): Promise<{ txid: string }> {
@@ -390,32 +445,47 @@ export async function submitVerdict(
   ]);
 }
 
+// Dispute resolution may redistribute funds; must allow contract transfers
 export async function closeDispute(disputeId: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.ARBITRATION, "close-dispute", [
-    uintCV(disputeId),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.ARBITRATION, "close-dispute",
+    [uintCV(disputeId)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
 // ─── synthetic-credit ─────────────────────────────────────────────────────────
 
+// Minting requires STX collateral at an on-chain ratio; must allow transfers
 export async function mintSCredit(amount: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.SYNTHETIC_CREDIT, "mint-scredit", [
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.SYNTHETIC_CREDIT, "mint-scredit",
+    [uintCV(amount)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
+// Burning returns STX collateral; amount depends on on-chain ratio
 export async function burnSCredit(amount: number): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.SYNTHETIC_CREDIT, "burn-scredit", [
-    uintCV(amount),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.SYNTHETIC_CREDIT, "burn-scredit",
+    [uintCV(amount)],
+    [],
+    PostConditionMode.Allow
+  );
 }
 
+// FT transfer requires a fungible-token post-condition we cannot express here
 export async function transferSCredit(
   amount: number,
   recipient: string
 ): Promise<{ txid: string }> {
-  return callContract(CONTRACT_NAMES.SYNTHETIC_CREDIT, "transfer-scredit", [
-    uintCV(amount),
-    principalCV(recipient),
-  ]);
+  return callContract(
+    CONTRACT_NAMES.SYNTHETIC_CREDIT, "transfer-scredit",
+    [uintCV(amount), principalCV(recipient)],
+    [],
+    PostConditionMode.Allow
+  );
 }
