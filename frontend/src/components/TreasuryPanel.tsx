@@ -25,6 +25,8 @@ import { validateSTX, validatePositiveInt, validatePrincipal, validateMaxLength 
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
+import { ErrorAlert } from "./ErrorAlert";
+import { useContractError } from "../hooks/useContractError";
 
 interface Proposal {
   id: number;
@@ -50,7 +52,8 @@ export default function TreasuryPanel() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [txPending, setTxPending] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess } = useToast();
+  const { error: contractError, clearError, setError } = useContractError();
 
   // Deposit form with validation
   const depCircle = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
@@ -109,9 +112,10 @@ export default function TreasuryPanel() {
     try {
       const res = await fn();
       toastSuccess(msg, res.txid);
+      clearError();
       setTimeout(refresh, 4000);
     } catch (e) {
-      toastError(String(e));
+      setError(String(e));
     } finally {
       setTxPending(false);
     }
@@ -138,6 +142,7 @@ export default function TreasuryPanel() {
   return (
     <section id="treasury" className="page-container" aria-labelledby="treasury-title">
       <h2 id="treasury-title" className="section-title">Treasury</h2>
+      <ErrorAlert error={contractError} onDismiss={clearError} />
 
       {loading && (
         <div className="grid-3" style={{ marginBottom: "1rem" }}>
