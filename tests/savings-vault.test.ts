@@ -14,6 +14,7 @@ import { assertEquals } from "https://deno.land/std@0.200.0/testing/asserts.ts";
 const ERR_NOT_MEMBER = 400;
 const ERR_INSUFFICIENT_BALANCE = 403;
 const ERR_STILL_LOCKED = 404;
+const ERR_LOCK_SHORTENING = 210;
 
 function setup(chain: Chain, accounts: Map<string, Account>) {
   const deployer = accounts.get("deployer")!;
@@ -177,5 +178,61 @@ Clarinet.test({
       Tx.contractCall("savings-vault", "lock-savings", [types.uint(5_000_000), types.uint(1000)], alice.address),
     ]);
     block.receipts[0].result.expectErr();
+  },
+});
+
+Clarinet.test({
+  name: "lock-savings: rejects a shorter lock that would shorten an existing period",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    // First lock — 2016 blocks (≈ 14 days)
+    const first = chain.mineBlock([
+      Tx.contractCall(
+        "savings-vault",
+        "lock-savings",
+        [types.uint(1_000_000), types.uint(2016)],
+        alice.address
+      ),
+    ]);
+    first.receipts[0].result.expectOk();
+
+    // Second lock with a much shorter period — should fail
+    const second = chain.mineBlock([
+      Tx.contractCall(
+        "savings-vault",
+        "lock-savings",
+        [types.uint(1_000_000), types.uint(144)],
+        alice.address
+      ),
+    ]);
+    second.receipts[0].result.expectErr().expectUint(ERR_LOCK_SHORTENING);
+  },
+});
+
+Clarinet.test({
+  name: "lock-savings: extending an existing lock period is allowed",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const { alice } = setup(chain, accounts);
+    // First lock — 500 blocks
+    const first = chain.mineBlock([
+      Tx.contractCall(
+        "savings-vault",
+        "lock-savings",
+        [types.uint(1_000_000), types.uint(500)],
+        alice.address
+      ),
+    ]);
+    first.receipts[0].result.expectOk();
+
+    // Second lock with a longer period — should succeed
+    const second = chain.mineBlock([
+      Tx.contractCall(
+        "savings-vault",
+        "lock-savings",
+        [types.uint(1_000_000), types.uint(5000)],
+        alice.address
+      ),
+    ]);
+    second.receipts[0].result.expectOk();
   },
 });
