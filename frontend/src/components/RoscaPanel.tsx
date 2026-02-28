@@ -7,20 +7,19 @@
  * and cycle management. On-chain Susu/Tontine/Chit-Fund mechanics.
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   createRosca,
   joinRosca,
-  lockAndStartRosca,
-  contributeRosca,
-  payoutRosca,
+  lockAndStart,
+  contribute,
+  payout,
   setPayoutOrder,
 } from "../lib/transactions";
 import { getRosca } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validateBlockCount, validateMaxLength, validatePrincipalList } from "../lib/validators";
-import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonCard } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
@@ -77,17 +76,6 @@ export default function RoscaPanel() {
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
 
-  /** ROSCA groups that are still collecting contributions */
-  const activeRoscas = useMemo(
-    () => roscas.filter((r) => r.status?.toLowerCase() === "active" || r.status?.toLowerCase() === "open"),
-    [roscas]
-  );
-  /** ROSCA groups that have completed their cycle */
-  const completedRoscas = useMemo(
-    () => roscas.filter((r) => r.status?.toLowerCase() === "complete" || r.status?.toLowerCase() === "closed"),
-    [roscas]
-  );
-
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
     try {
@@ -139,30 +127,32 @@ export default function RoscaPanel() {
         <div className="grid-2">
           <div className="form-group">
             <label>Name</label>
-            <input value={rName} onChange={(e) => setRName(e.target.value)} placeholder="Friday Savers" />
+            <input value={rName.value} onChange={rName.onChange} onBlur={rName.onBlur} placeholder="Friday Savers" />
+            {rName.error && <span className="text-sm" style={{ color: 'var(--color-error)' }}>{rName.error}</span>}
           </div>
           <div className="form-group">
             <label>Contribution per Cycle (STX)</label>
-            <input type="number" value={rContrib} onChange={(e) => setRContrib(e.target.value)} placeholder="10.0" min="0.000001" step="0.000001" />
+            <input type="number" value={rContrib.value} onChange={rContrib.onChange} onBlur={rContrib.onBlur} placeholder="10.0" min="0.000001" step="0.000001" />
+            {rContrib.error && <span className="text-sm" style={{ color: 'var(--color-error)' }}>{rContrib.error}</span>}
           </div>
           <div className="form-group">
             <label>Cycle Length (blocks)</label>
-            <input type="number" value={rCycle} onChange={(e) => setRCycle(e.target.value)} placeholder="1008" />
-            <span className="text-muted" style={{ fontSize: "0.75rem" }}>≈ {Math.round(parseInt(rCycle || "0") / 144)} days</span>
+            <input type="number" value={rCycle.value} onChange={rCycle.onChange} onBlur={rCycle.onBlur} placeholder="1008" />
+            <span className="text-muted" style={{ fontSize: "0.75rem" }}>≈ {Math.round(parseInt(rCycle.value || "0") / 144)} days</span>
           </div>
           <div className="form-group">
             <label>Max Members</label>
-            <input type="number" value={rMax} onChange={(e) => setRMax(e.target.value)} min="2" max="20" />
+            <input type="number" value={rMax.value} onChange={rMax.onChange} onBlur={rMax.onBlur} min="2" max="20" />
           </div>
         </div>
         <button
           className="btn-primary"
           aria-busy={txPending}
           aria-label="Create new ROSCA group"
-          disabled={txPending || !rName || !rContrib}
+          disabled={txPending || !rName.value || !rContrib.value}
           onClick={() =>
             handle(
-              () => createRosca(rName, Math.floor(parseFloat(rContrib) * 1_000_000), parseInt(rCycle), parseInt(rMax)),
+              () => createRosca(rName.value, Math.floor(parseFloat(rContrib.value) * 1_000_000), parseInt(rCycle.value), parseInt(rMax.value)),
               "ROSCA created"
             )
           }
@@ -176,13 +166,13 @@ export default function RoscaPanel() {
         <h3 style={{ marginBottom: "1rem" }}>ROSCA Actions</h3>
         <div className="form-group">
           <label>ROSCA ID</label>
-          <input type="number" value={actRoscaId} onChange={(e) => setActRoscaId(e.target.value)} placeholder="1" />
+          <input type="number" value={actRoscaId.value} onChange={actRoscaId.onChange} onBlur={actRoscaId.onBlur} placeholder="1" />
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Join ROSCA" disabled={txPending || !actRoscaId} onClick={() => handle(() => joinRosca(parseInt(actRoscaId)), "Joined ROSCA")}>Join</button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Lock and start ROSCA" disabled={txPending || !actRoscaId} onClick={() => handle(() => lockAndStartRosca(parseInt(actRoscaId)), "ROSCA started")}>Lock & Start</button>
-          <button className="btn-primary" aria-busy={txPending} aria-label="Contribute to ROSCA" disabled={txPending || !actRoscaId} onClick={() => handle(() => contributeRosca(parseInt(actRoscaId)), "Contribution sent")}>Contribute</button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Trigger payout" disabled={txPending || !actRoscaId} onClick={() => handle(() => payoutRosca(parseInt(actRoscaId)), "Payout triggered")}>Trigger Payout</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Join ROSCA" disabled={txPending || !actRoscaId.value} onClick={() => handle(() => joinRosca(parseInt(actRoscaId.value)), "Joined ROSCA")}>Join</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Lock and start ROSCA" disabled={txPending || !actRoscaId.value} onClick={() => handle(() => lockAndStart(parseInt(actRoscaId.value)), "ROSCA started")}>Lock & Start</button>
+          <button className="btn-primary" aria-busy={txPending} aria-label="Contribute to ROSCA" disabled={txPending || !actRoscaId.value} onClick={() => handle(() => contribute(parseInt(actRoscaId.value)), "Contribution sent")}>Contribute</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Trigger payout" disabled={txPending || !actRoscaId.value} onClick={() => handle(() => payout(parseInt(actRoscaId.value)), "Payout triggered")}>Trigger Payout</button>
         </div>
 
         {/* Set payout order */}
@@ -191,8 +181,9 @@ export default function RoscaPanel() {
             Set Payout Order (comma-separated principals, admin only)
           </label>
           <input
-            value={orderList}
-            onChange={(e) => setOrderList(e.target.value)}
+            value={orderList.value}
+            onChange={orderList.onChange}
+            onBlur={orderList.onBlur}
             placeholder="ST1…, ST2…, ST3…"
             style={{ width: "100%", marginBottom: "0.5rem" }}
           />
@@ -200,10 +191,10 @@ export default function RoscaPanel() {
             className="btn-secondary"
             aria-busy={txPending}
             aria-label="Set payout order"
-            disabled={txPending || !actRoscaId || !orderList}
+            disabled={txPending || !actRoscaId.value || !orderList.value}
             onClick={() => {
-              const principals = orderList.split(",").map((p) => p.trim()).filter(Boolean);
-              handle(() => setPayoutOrder(parseInt(actRoscaId), principals), "Payout order set");
+              const principals = orderList.value.split(",").map((p: string) => p.trim()).filter(Boolean);
+              handle(() => setPayoutOrder(parseInt(actRoscaId.value), principals), "Payout order set");
             }}
           >
             Set Order

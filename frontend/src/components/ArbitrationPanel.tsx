@@ -8,11 +8,11 @@
  * for penalty application on losing parties.
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   openDispute,
-  joinArbitrationPanel,
+  joinPanel,
   submitVerdict,
   closeDispute,
 } from "../lib/transactions";
@@ -57,6 +57,7 @@ export default function ArbitrationPanel() {
   const respondent = useFormField("", validatePrincipal);
   const circleId = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
   const disputeDesc = useFormField("", (v) => validateMaxLength(v, 300, "Description"));
+  const disputeEvidence = useFormField("", (v) => validateMaxLength(v, 500, "Evidence"));
 
   // Actions with validation
   const actDisputeId = useFormField("", (v) => validatePositiveInt(v, "Dispute ID"));
@@ -81,17 +82,6 @@ export default function ArbitrationPanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
-
-  /** Disputes that are still open / awaiting verdict */
-  const openDisputes = useMemo(
-    () => disputes.filter((d) => d.status?.toLowerCase() === "open"),
-    [disputes]
-  );
-  /** Disputes that have been resolved or closed */
-  const closedDisputes = useMemo(
-    () => disputes.filter((d) => d.status?.toLowerCase() !== "open"),
-    [disputes]
-  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
@@ -134,7 +124,7 @@ export default function ArbitrationPanel() {
         3-member inter-circle panel resolves disputes. Panelists must have trust ≥ 400 and not be from the same circle.
       </p>
 
-      {/* Open Dispute */}}
+      {/* Open Dispute */}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginBottom: "1rem" }}>Open a Dispute</h3>
         <p className="text-muted text-sm" style={{ marginBottom: "0.75rem" }}>
@@ -143,25 +133,29 @@ export default function ArbitrationPanel() {
         <div className="grid-2">
           <div className="form-group">
             <label>Respondent (principal)</label>
-            <input value={respondent} onChange={(e) => setRespondent(e.target.value)} placeholder="ST1PQHQ…" />
+            <input value={respondent.value} onChange={respondent.onChange} onBlur={respondent.onBlur} placeholder="ST1PQHQ…" />
           </div>
           <div className="form-group">
             <label>Circle ID</label>
-            <input type="number" value={circleId} onChange={(e) => setCircleId(e.target.value)} placeholder="1" />
+            <input type="number" value={circleId.value} onChange={circleId.onChange} onBlur={circleId.onBlur} placeholder="1" />
           </div>
           <div className="form-group" style={{ gridColumn: "1 / -1" }}>
             <label>Description of Dispute</label>
-            <input value={disputeDesc} onChange={(e) => setDisputeDesc(e.target.value)} placeholder="Worker failed to deliver…" />
+            <input value={disputeDesc.value} onChange={disputeDesc.onChange} onBlur={disputeDesc.onBlur} placeholder="Worker failed to deliver…" />
+          </div>
+          <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+            <label>Evidence</label>
+            <input value={disputeEvidence.value} onChange={disputeEvidence.onChange} onBlur={disputeEvidence.onBlur} placeholder="Link or description of evidence…" />
           </div>
         </div>
         <button
           className="btn-primary"
           aria-busy={txPending}
           aria-label="Open dispute"
-          disabled={txPending || !respondent || !circleId}
+          disabled={txPending || !respondent.value || !circleId.value}
           onClick={() =>
             handle(
-              () => openDispute(respondent, parseInt(circleId), disputeDesc),
+              () => openDispute(respondent.value, parseInt(circleId.value), disputeDesc.value, disputeEvidence.value),
               "Dispute opened"
             )
           }
@@ -175,7 +169,7 @@ export default function ArbitrationPanel() {
         <h3 style={{ marginBottom: "1rem" }}>Panel & Verdict Actions</h3>
         <div className="form-group">
           <label>Dispute ID</label>
-          <input type="number" value={actDisputeId} onChange={(e) => setActDisputeId(e.target.value)} placeholder="1" />
+          <input type="number" value={actDisputeId.value} onChange={actDisputeId.onChange} onBlur={actDisputeId.onBlur} placeholder="1" />
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
@@ -183,8 +177,8 @@ export default function ArbitrationPanel() {
             className="btn-secondary"
             aria-busy={txPending}
             aria-label="Join arbitration panel"
-            disabled={txPending || !actDisputeId}
-            onClick={() => handle(() => joinArbitrationPanel(parseInt(actDisputeId)), "Joined panel")}
+            disabled={txPending || !actDisputeId.value}
+            onClick={() => handle(() => joinPanel(parseInt(actDisputeId.value)), "Joined panel")}
           >
             Join Panel
           </button>
@@ -192,8 +186,8 @@ export default function ArbitrationPanel() {
             className="btn-secondary"
             aria-busy={txPending}
             aria-label="Close dispute"
-            disabled={txPending || !actDisputeId}
-            onClick={() => handle(() => closeDispute(parseInt(actDisputeId)), "Dispute closed")}
+            disabled={txPending || !actDisputeId.value}
+            onClick={() => handle(() => closeDispute(parseInt(actDisputeId.value)), "Dispute closed")}
           >
             Close Dispute
           </button>
@@ -213,15 +207,15 @@ export default function ArbitrationPanel() {
             </div>
             <div className="form-group">
               <label>Reasoning</label>
-              <input value={verdictReason} onChange={(e) => setVerdictReason(e.target.value)} placeholder="Based on evidence…" />
+              <input value={verdictReason.value} onChange={verdictReason.onChange} onBlur={verdictReason.onBlur} placeholder="Based on evidence…" />
             </div>
           </div>
           <button
             className="btn-primary"
             aria-busy={txPending}
             aria-label="Submit verdict"
-            disabled={txPending || !actDisputeId}
-            onClick={() => handle(() => submitVerdict(parseInt(actDisputeId), parseInt(verdictChoice), verdictReason), "Verdict submitted")}
+            disabled={txPending || !actDisputeId.value}
+            onClick={() => handle(() => submitVerdict(parseInt(actDisputeId.value), parseInt(verdictChoice), verdictReason.value), "Verdict submitted")}
           >
             {txPending ? <span className="spinner" /> : "Submit Verdict"}
           </button>

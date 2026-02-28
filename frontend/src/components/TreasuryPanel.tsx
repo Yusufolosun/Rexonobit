@@ -7,7 +7,7 @@
  * and proposal execution after quorum is reached.
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   depositToTreasury,
@@ -96,17 +96,6 @@ export default function TreasuryPanel() {
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
 
-  /** Proposals awaiting quorum or execution */
-  const pendingProposals = useMemo(
-    () => proposals.filter((p) => p.status?.toLowerCase() === "pending" || p.status?.toLowerCase() === "active"),
-    [proposals]
-  );
-  /** Proposals that have been executed */
-  const executedProposals = useMemo(
-    () => proposals.filter((p) => p.status?.toLowerCase() === "executed"),
-    [proposals]
-  );
-
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
     try {
@@ -171,18 +160,18 @@ export default function TreasuryPanel() {
           <h3 style={{ marginBottom: "1rem" }}>Deposit to Treasury</h3>
           <div className="form-group">
             <label>Circle ID</label>
-            <input type="number" value={depCircle} onChange={(e) => setDepCircle(e.target.value)} placeholder="1" />
+            <input type="number" value={depCircle.value} onChange={depCircle.onChange} onBlur={depCircle.onBlur} placeholder="1" />
           </div>
           <div className="form-group">
             <label>Amount (STX)</label>
-            <input type="number" value={depAmt} onChange={(e) => setDepAmt(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+            <input type="number" value={depAmt.value} onChange={depAmt.onChange} onBlur={depAmt.onBlur} placeholder="0.0" min="0.000001" step="0.000001" />
           </div>
           <button
             className="btn-secondary"
             aria-busy={txPending}
             aria-label="Deposit to treasury"
-            disabled={txPending || !depCircle || !depAmt}
-            onClick={() => handle(() => depositToTreasury(parseInt(depCircle), Math.floor(parseFloat(depAmt) * 1_000_000)), "Deposit sent")}
+            disabled={txPending || !depCircle.value || !depAmt.value}
+            onClick={() => handle(() => depositToTreasury(parseInt(depCircle.value), Math.floor(parseFloat(depAmt.value) * 1_000_000)), "Deposit sent")}
           >
             {txPending ? <span className="spinner" /> : "Deposit"}
           </button>
@@ -193,28 +182,28 @@ export default function TreasuryPanel() {
           <h3 style={{ marginBottom: "1rem" }}>Propose Spend</h3>
           <div className="form-group">
             <label>Circle ID</label>
-            <input type="number" value={propCircle} onChange={(e) => setPropCircle(e.target.value)} placeholder="1" />
+            <input type="number" value={propCircle.value} onChange={propCircle.onChange} onBlur={propCircle.onBlur} placeholder="1" />
           </div>
           <div className="form-group">
             <label>Recipient</label>
-            <input value={propRecipient} onChange={(e) => setPropRecipient(e.target.value)} placeholder="ST1PQHQ…" />
+            <input value={propRecipient.value} onChange={propRecipient.onChange} onBlur={propRecipient.onBlur} placeholder="ST1PQHQ…" />
           </div>
           <div className="form-group">
             <label>Amount (STX)</label>
-            <input type="number" value={propAmt} onChange={(e) => setPropAmt(e.target.value)} placeholder="0.0" min="0.000001" step="0.000001" />
+            <input type="number" value={propAmt.value} onChange={propAmt.onChange} onBlur={propAmt.onBlur} placeholder="0.0" min="0.000001" step="0.000001" />
           </div>
           <div className="form-group">
             <label>Description</label>
-            <input value={propDesc} onChange={(e) => setPropDesc(e.target.value)} placeholder="Community event fund…" />
+            <input value={propDesc.value} onChange={propDesc.onChange} onBlur={propDesc.onBlur} placeholder="Community event fund…" />
           </div>
           <button
             className="btn-primary"
             aria-busy={txPending}
             aria-label="Create spend proposal"
-            disabled={txPending || !propCircle || !propRecipient || !propAmt}
+            disabled={txPending || !propCircle.value || !propRecipient.value || !propAmt.value}
             onClick={() =>
               handle(
-                () => proposeSpend(parseInt(propCircle), propRecipient, Math.floor(parseFloat(propAmt) * 1_000_000), propDesc),
+                () => proposeSpend(parseInt(propCircle.value), propRecipient.value, Math.floor(parseFloat(propAmt.value) * 1_000_000), propDesc.value),
                 "Proposal created"
               )
             }
@@ -231,15 +220,15 @@ export default function TreasuryPanel() {
           <div>
             <div className="form-group">
               <label>Proposal ID</label>
-              <input type="number" value={voteId} onChange={(e) => setVoteId(e.target.value)} placeholder="1" />
+              <input type="number" value={voteId.value} onChange={voteId.onChange} onBlur={voteId.onBlur} placeholder="1" />
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button className="btn-primary" aria-busy={txPending} aria-label="Vote yes on proposal" disabled={txPending || !voteId} style={{ flex: 1 }}
-                onClick={() => handle(() => voteOnProposal(parseInt(voteId), true), "Vote YES cast")}>
+              <button className="btn-primary" aria-busy={txPending} aria-label="Vote yes on proposal" disabled={txPending || !voteId.value} style={{ flex: 1 }}
+                onClick={() => handle(() => voteOnProposal(parseInt(voteId.value), true), "Vote YES cast")}>
                 Vote YES
               </button>
-              <button className="btn-secondary" aria-busy={txPending} aria-label="Vote no on proposal" disabled={txPending || !voteId} style={{ flex: 1 }}
-                onClick={() => handle(() => voteOnProposal(parseInt(voteId), false), "Vote NO cast")}>
+              <button className="btn-secondary" aria-busy={txPending} aria-label="Vote no on proposal" disabled={txPending || !voteId.value} style={{ flex: 1 }}
+                onClick={() => handle(() => voteOnProposal(parseInt(voteId.value), false), "Vote NO cast")}>
                 Vote NO
               </button>
             </div>
@@ -247,15 +236,15 @@ export default function TreasuryPanel() {
           <div>
             <div className="form-group">
               <label>Proposal ID to Execute</label>
-              <input type="number" value={execId} onChange={(e) => setExecId(e.target.value)} placeholder="1" />
+              <input type="number" value={execId.value} onChange={execId.onChange} onBlur={execId.onBlur} placeholder="1" />
             </div>
             <button
               className="btn-primary"
               aria-busy={txPending}
               aria-label="Execute approved spend proposal"
-              disabled={txPending || !execId}
+              disabled={txPending || !execId.value}
               style={{ width: "100%" }}
-              onClick={() => handle(() => executeSpend(parseInt(execId)), "Spend executed")}
+              onClick={() => handle(() => executeSpend(parseInt(execId.value)), "Spend executed")}
             >
               {txPending ? <span className="spinner" /> : "Execute Spend"}
             </button>

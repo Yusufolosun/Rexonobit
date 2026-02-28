@@ -7,13 +7,13 @@
  * updates, member expulsion), trust-weighted voting, execution, and veto.
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
-  proposeGovernance,
-  voteGovernance,
-  executeGovernanceProposal,
-  vetoGovernanceProposal,
+  createProposal,
+  voteOnGovProposal,
+  executeGovProposal,
+  vetoGovProposal,
 } from "../lib/transactions";
 import { getGovernanceProposal } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
@@ -40,10 +40,10 @@ interface GovProposal {
 }
 
 const PROPOSAL_TYPES = [
-  { value: "PARAM-CHANGE", label: "Protocol Parameter Change" },
-  { value: "EXPEL-MEMBER", label: "Expel Member" },
-  { value: "TREASURY-SPEND", label: "Treasury Spend" },
-  { value: "POLICY-UPDATE", label: "Policy Update" },
+  { value: 1, label: "Protocol Parameter Change" },
+  { value: 2, label: "Expel Member" },
+  { value: 3, label: "Treasury Spend" },
+  { value: 4, label: "Policy Update" },
 ];
 
 export default function GovernancePanel() {
@@ -55,11 +55,13 @@ export default function GovernancePanel() {
   const { error: contractError, clearError, setError } = useContractError();
 
   // Propose form with validation
-  const [propType, setPropType] = useState("PARAM-CHANGE");
+  const [propType, setPropType] = useState(1);
   const propTitle = useFormField("", (v) => validateMaxLength(v, 80, "Title"));
   const propDesc = useFormField("", (v) => validateMaxLength(v, 400, "Description"));
   const propParam = useFormField("", (v) => validateRequired(v, "Parameter key"));
   const propValue = useFormField("", (v) => validatePositiveInt(v, "Parameter value"));
+  const propCircleId = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
+  const propTarget = useFormField("");
 
   // Vote / execute / veto
   const actId = useFormField("", (v) => validatePositiveInt(v, "Proposal ID"));
@@ -82,15 +84,6 @@ export default function GovernancePanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
-
-  const activeProposals = useMemo(
-    () => proposals.filter((p) => p.status === "ACTIVE" || p.status === "active"),
-    [proposals]
-  );
-  const closedProposals = useMemo(
-    () => proposals.filter((p) => p.status !== "ACTIVE" && p.status !== "active"),
-    [proposals]
-  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
@@ -132,45 +125,63 @@ export default function GovernancePanel() {
         Trust-weighted voting. Each member's vote weight equals their trust score, capped at 20% of total weight.
       </p>
 
-      {/* Create Proposal */}}
+      {/* Create Proposal */}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginBottom: "1rem" }}>Create Proposal</h3>
         <div className="grid-2">
           <div className="form-group">
+            <label>Circle ID</label>
+            <input type="number" value={propCircleId.value} onChange={propCircleId.onChange} onBlur={propCircleId.onBlur} placeholder="1" />
+          </div>
+          <div className="form-group">
             <label>Proposal Type</label>
-            <select value={propType} onChange={(e) => setPropType(e.target.value)}>
+            <select value={propType} onChange={(e) => setPropType(Number(e.target.value))}>
               {PROPOSAL_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label>Title</label>
-            <input value={propTitle} onChange={(e) => setPropTitle(e.target.value)} placeholder="Reduce loan interest rate" />
+            <input value={propTitle.value} onChange={propTitle.onChange} onBlur={propTitle.onBlur} placeholder="Reduce loan interest rate" />
           </div>
           <div className="form-group" style={{ gridColumn: "1 / -1" }}>
             <label>Description</label>
-            <input value={propDesc} onChange={(e) => setPropDesc(e.target.value)} placeholder="This proposal aims to…" />
+            <input value={propDesc.value} onChange={propDesc.onChange} onBlur={propDesc.onBlur} placeholder="This proposal aims to…" />
           </div>
-          {propType === "PARAM-CHANGE" && (
+          {propType === 1 && (
             <>
               <div className="form-group">
                 <label>Parameter Key</label>
-                <input value={propParam} onChange={(e) => setPropParam(e.target.value)} placeholder="loan-interest-rate-bps" />
+                <input value={propParam.value} onChange={propParam.onChange} onBlur={propParam.onBlur} placeholder="loan-interest-rate-bps" />
               </div>
               <div className="form-group">
                 <label>New Value</label>
-                <input type="number" value={propValue} onChange={(e) => setPropValue(e.target.value)} placeholder="500" />
+                <input type="number" value={propValue.value} onChange={propValue.onChange} onBlur={propValue.onBlur} placeholder="500" />
               </div>
             </>
+          )}
+          {propType === 2 && (
+            <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+              <label>Target Principal</label>
+              <input value={propTarget.value} onChange={propTarget.onChange} onBlur={propTarget.onBlur} placeholder="SP…" />
+            </div>
           )}
         </div>
         <button
           className="btn-primary"
           aria-busy={txPending}
           aria-label="Submit governance proposal"
-          disabled={txPending || !propTitle}
+          disabled={txPending || !propTitle.value}
           onClick={() =>
             handle(
-              () => proposeGovernance(propType, propTitle, propDesc, propParam || undefined, propValue ? parseInt(propValue) : undefined),
+              () => createProposal(
+                parseInt(propCircleId.value) || 1,
+                propType,
+                propTitle.value,
+                propDesc.value,
+                propParam.value || "",
+                propValue.value ? parseInt(propValue.value) : 0,
+                propTarget.value || null
+              ),
               "Proposal created"
             )
           }
@@ -184,13 +195,13 @@ export default function GovernancePanel() {
         <h3 style={{ marginBottom: "1rem" }}>Vote / Execute / Veto</h3>
         <div className="form-group">
           <label>Proposal ID</label>
-          <input type="number" value={actId} onChange={(e) => setActId(e.target.value)} placeholder="1" />
+          <input type="number" value={actId.value} onChange={actId.onChange} onBlur={actId.onBlur} placeholder="1" />
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button className="btn-primary" aria-busy={txPending} aria-label="Vote yes on proposal" disabled={txPending || !actId} onClick={() => handle(() => voteGovernance(parseInt(actId), true), "Vote YES cast")}>Vote YES</button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Vote no on proposal" disabled={txPending || !actId} onClick={() => handle(() => voteGovernance(parseInt(actId), false), "Vote NO cast")}>Vote NO</button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Execute proposal" disabled={txPending || !actId} onClick={() => handle(() => executeGovernanceProposal(parseInt(actId)), "Proposal executed")}>Execute</button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Veto proposal" disabled={txPending || !actId} onClick={() => handle(() => vetoGovernanceProposal(parseInt(actId)), "Proposal vetoed")}>Veto</button>
+          <button className="btn-primary" aria-busy={txPending} aria-label="Vote yes on proposal" disabled={txPending || !actId.value} onClick={() => handle(() => voteOnGovProposal(parseInt(actId.value), true), "Vote YES cast")}>Vote YES</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Vote no on proposal" disabled={txPending || !actId.value} onClick={() => handle(() => voteOnGovProposal(parseInt(actId.value), false), "Vote NO cast")}>Vote NO</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Execute proposal" disabled={txPending || !actId.value} onClick={() => handle(() => executeGovProposal(parseInt(actId.value)), "Proposal executed")}>Execute</button>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Veto proposal" disabled={txPending || !actId.value} onClick={() => handle(() => vetoGovProposal(parseInt(actId.value)), "Proposal vetoed")}>Veto</button>
         </div>
       </div>
 

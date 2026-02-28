@@ -51,10 +51,10 @@ export const ProtocolStats: React.FC = () => {
     setError(null);
     try {
       const [members, circles, pool, treasury] = await Promise.all([
-        getTotalMembers(address),
-        getTotalCircles(address),
-        getPoolBalance(address, 1),
-        getTreasuryBalance(address),
+        getTotalMembers(),
+        getTotalCircles(),
+        getPoolBalance(1),
+        getTreasuryBalance(1),
       ]);
       setStats({
         totalMembers: members ?? 0,

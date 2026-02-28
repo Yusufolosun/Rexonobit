@@ -8,7 +8,7 @@
  * locked savings balance via the synthetic-credit contract.
  */
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import { mintSCredit, burnSCredit, transferSCredit } from "../lib/transactions";
 import { useSCredit } from "../hooks/useSCredit";

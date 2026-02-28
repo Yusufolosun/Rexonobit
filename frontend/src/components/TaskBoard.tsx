@@ -8,7 +8,7 @@
  * dispute escalation.
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   postTask,
@@ -22,7 +22,6 @@ import {
 import { getTask, getTotalTasks } from "../lib/read";
 import { useFormField } from "../hooks/useFormField";
 import { validateSTX, validatePositiveInt, validateTaskTitle, validateTaskDescription, validatePrincipal } from "../lib/validators";
-import { FormInput, FormTextarea } from "./FormInput";
 import { SkeletonRow } from "./SkeletonCard";
 import { useToast } from "../context/ToastContext";
 import { useWindowFocus } from "../hooks/useWindowFocus";
@@ -58,13 +57,14 @@ export default function TaskBoard() {
   const { error: contractError, clearError, setError } = useContractError();
 
   // Post task form with validation
+  const circleId = useFormField("", (v) => validatePositiveInt(v, "Circle ID"));
   const taskTitle = useFormField("", validateTaskTitle);
   const taskDesc = useFormField("", validateTaskDescription);
   const taskBounty = useFormField("", validateSTX);
 
   // Action forms with validation
   const taskId = useFormField("", (v) => validatePositiveInt(v, "Task ID"));
-  const bidAmt = useFormField("", validateSTX);
+  const bidMsg = useFormField("", (v) => v.trim() ? { valid: true, error: null } : { valid: false, error: "Bid message is required" });
   const workerAddr = useFormField("", validatePrincipal);
 
   const refresh = useCallback(async () => {
@@ -85,15 +85,6 @@ export default function TaskBoard() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
-
-  const openTasks = useMemo(
-    () => tasks.filter((t) => t.status === "OPEN" || t.status === "open"),
-    [tasks]
-  );
-  const closedTasks = useMemo(
-    () => tasks.filter((t) => t.status !== "OPEN" && t.status !== "open"),
-    [tasks]
-  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
@@ -125,31 +116,35 @@ export default function TaskBoard() {
       <h2 id="tasks-title" className="section-title">Labor Market</h2>
       <ErrorAlert error={contractError} onDismiss={clearError} />
 
-      {/* Post Task */}}
+      {/* Post Task */}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginBottom: "1rem" }}>Post a Task</h3>
         <div className="grid-2">
-          <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-            <label>Task Title</label>
-            <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Build a landing page" />
-          </div>
-          <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-            <label>Description</label>
-            <input value={taskDesc} onChange={(e) => setTaskDesc(e.target.value)} placeholder="I need…" />
+          <div className="form-group">
+            <label>Circle ID</label>
+            <input type="number" value={circleId.value} onChange={circleId.onChange} onBlur={circleId.onBlur} placeholder="1" />
           </div>
           <div className="form-group">
             <label>Bounty (STX)</label>
-            <input type="number" value={taskBounty} onChange={(e) => setTaskBounty(e.target.value)} placeholder="5.0" min="0.000001" step="0.000001" />
+            <input type="number" value={taskBounty.value} onChange={taskBounty.onChange} onBlur={taskBounty.onBlur} placeholder="5.0" min="0.000001" step="0.000001" />
+          </div>
+          <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+            <label>Task Title</label>
+            <input value={taskTitle.value} onChange={taskTitle.onChange} onBlur={taskTitle.onBlur} placeholder="Build a landing page" />
+          </div>
+          <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+            <label>Description</label>
+            <input value={taskDesc.value} onChange={taskDesc.onChange} onBlur={taskDesc.onBlur} placeholder="I need…" />
           </div>
         </div>
         <button
           className="btn-primary"
           aria-busy={txPending}
           aria-label="Post new task"
-          disabled={txPending || !taskTitle || !taskBounty}
+          disabled={txPending || !circleId.value || !taskTitle.value || !taskBounty.value}
           onClick={() =>
             handle(
-              () => postTask(taskTitle, taskDesc, Math.floor(parseFloat(taskBounty) * 1_000_000)),
+              () => postTask(parseInt(circleId.value), taskTitle.value, taskDesc.value, Math.floor(parseFloat(taskBounty.value) * 1_000_000)),
               "Task posted"
             )
           }
@@ -163,45 +158,45 @@ export default function TaskBoard() {
         <h3 style={{ marginBottom: "1rem" }}>Task Actions</h3>
         <div className="form-group">
           <label>Task ID</label>
-          <input type="number" value={taskId} onChange={(e) => setTaskId(e.target.value)} placeholder="1" />
+          <input type="number" value={taskId.value} onChange={taskId.onChange} onBlur={taskId.onBlur} placeholder="1" />
         </div>
         <div className="grid-2">
           <div className="form-group">
-            <label>Bid Amount (STX, for bidding)</label>
-            <input type="number" value={bidAmt} onChange={(e) => setBidAmt(e.target.value)} placeholder="4.5" min="0" step="0.000001" />
+            <label>Bid Message</label>
+            <input value={bidMsg.value} onChange={bidMsg.onChange} onBlur={bidMsg.onBlur} placeholder="I can deliver this in 3 days" />
           </div>
           <div className="form-group">
             <label>Worker Address (for accept-bid)</label>
-            <input value={workerAddr} onChange={(e) => setWorkerAddr(e.target.value)} placeholder="ST1PQHQ…" />
+            <input value={workerAddr.value} onChange={workerAddr.onChange} onBlur={workerAddr.onBlur} placeholder="ST1PQHQ…" />
           </div>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Bid on task" disabled={txPending || !taskId || !bidAmt}
-            onClick={() => handle(() => bidTask(parseInt(taskId), Math.floor(parseFloat(bidAmt) * 1_000_000)), "Bid submitted")}>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Bid on task" disabled={txPending || !taskId.value || !bidMsg.value}
+            onClick={() => handle(() => bidTask(parseInt(taskId.value), bidMsg.value), "Bid submitted")}>
             Bid
           </button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Accept bid from worker" disabled={txPending || !taskId || !workerAddr}
-            onClick={() => handle(() => acceptBid(parseInt(taskId), workerAddr), "Bid accepted")}>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Accept bid from worker" disabled={txPending || !taskId.value || !workerAddr.value}
+            onClick={() => handle(() => acceptBid(parseInt(taskId.value), workerAddr.value), "Bid accepted")}>
             Accept Bid
           </button>
-          <button className="btn-primary" aria-busy={txPending} aria-label="Submit task completion" disabled={txPending || !taskId}
-            onClick={() => handle(() => submitCompletion(parseInt(taskId)), "Completion submitted")}>
+          <button className="btn-primary" aria-busy={txPending} aria-label="Submit task completion" disabled={txPending || !taskId.value}
+            onClick={() => handle(() => submitCompletion(parseInt(taskId.value)), "Completion submitted")}>
             Submit Completion
           </button>
-          <button className="btn-primary" aria-busy={txPending} aria-label="Attest task complete" disabled={txPending || !taskId}
-            onClick={() => handle(() => attestTask(parseInt(taskId), true), "Attested ✓")}>
+          <button className="btn-primary" aria-busy={txPending} aria-label="Attest task complete" disabled={txPending || !taskId.value}
+            onClick={() => handle(() => attestTask(parseInt(taskId.value), true), "Attested ✓")}>
             Attest ✓
           </button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Reject task completion" disabled={txPending || !taskId}
-            onClick={() => handle(() => attestTask(parseInt(taskId), false), "Attest rejected")}>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Reject task completion" disabled={txPending || !taskId.value}
+            onClick={() => handle(() => attestTask(parseInt(taskId.value), false), "Attest rejected")}>
             Reject
           </button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Open dispute on task" disabled={txPending || !taskId}
-            onClick={() => handle(() => disputeTask(parseInt(taskId)), "Dispute opened")}>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Open dispute on task" disabled={txPending || !taskId.value}
+            onClick={() => handle(() => disputeTask(parseInt(taskId.value)), "Dispute opened")}>
             Open Dispute
           </button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Cancel task" disabled={txPending || !taskId}
-            onClick={() => handle(() => cancelTask(parseInt(taskId)), "Task cancelled")}>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Cancel task" disabled={txPending || !taskId.value}
+            onClick={() => handle(() => cancelTask(parseInt(taskId.value)), "Task cancelled")}>
             Cancel
           </button>
         </div>
