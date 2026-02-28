@@ -179,6 +179,8 @@ export default function TreasuryPanel() {
           </div>
           <button
             className="btn-secondary"
+            aria-busy={txPending}
+            aria-label="Deposit to treasury"
             disabled={txPending || !depCircle || !depAmt}
             onClick={() => handle(() => depositToTreasury(parseInt(depCircle), Math.floor(parseFloat(depAmt) * 1_000_000)), "Deposit sent")}
           >
@@ -207,6 +209,8 @@ export default function TreasuryPanel() {
           </div>
           <button
             className="btn-primary"
+            aria-busy={txPending}
+            aria-label="Create spend proposal"
             disabled={txPending || !propCircle || !propRecipient || !propAmt}
             onClick={() =>
               handle(
@@ -230,11 +234,11 @@ export default function TreasuryPanel() {
               <input type="number" value={voteId} onChange={(e) => setVoteId(e.target.value)} placeholder="1" />
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button className="btn-primary" disabled={txPending || !voteId} style={{ flex: 1 }}
+              <button className="btn-primary" aria-busy={txPending} aria-label="Vote yes on proposal" disabled={txPending || !voteId} style={{ flex: 1 }}
                 onClick={() => handle(() => voteOnProposal(parseInt(voteId), true), "Vote YES cast")}>
                 Vote YES
               </button>
-              <button className="btn-secondary" disabled={txPending || !voteId} style={{ flex: 1 }}
+              <button className="btn-secondary" aria-busy={txPending} aria-label="Vote no on proposal" disabled={txPending || !voteId} style={{ flex: 1 }}
                 onClick={() => handle(() => voteOnProposal(parseInt(voteId), false), "Vote NO cast")}>
                 Vote NO
               </button>
@@ -247,6 +251,8 @@ export default function TreasuryPanel() {
             </div>
             <button
               className="btn-primary"
+              aria-busy={txPending}
+              aria-label="Execute approved spend proposal"
               disabled={txPending || !execId}
               style={{ width: "100%" }}
               onClick={() => handle(() => executeSpend(parseInt(execId)), "Spend executed")}
