@@ -7,7 +7,7 @@
  * defaulters. Powered by the lending-pool contract.
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import { requestLoan, repayLoan, liquidateDefaulter, fundPool } from "../lib/transactions";
 import { getLoan, getPoolBalance, getTotalCircles } from "../lib/read";
