@@ -1,7 +1,7 @@
 // frontend/src/components/TaskBoard.tsx
 // On-chain gig board: post task, bid, accept bid, submit, attest, dispute
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useWallet } from "../context/WalletContext";
 import {
   postTask,
@@ -75,6 +75,15 @@ export default function TaskBoard() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useWindowFocus(refresh);
+
+  const openTasks = useMemo(
+    () => tasks.filter((t) => t.status === "OPEN" || t.status === "open"),
+    [tasks]
+  );
+  const closedTasks = useMemo(
+    () => tasks.filter((t) => t.status !== "OPEN" && t.status !== "open"),
+    [tasks]
+  );
 
   const handle = async (fn: () => Promise<{ txid: string }>, msg: string) => {
     setTxPending(true);
