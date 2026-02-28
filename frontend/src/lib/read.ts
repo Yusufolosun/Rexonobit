@@ -1,6 +1,14 @@
 // frontend/src/lib/read.ts
 // Read-only contract call helpers via Stacks API (no wallet required)
 
+/**
+ * @module read
+ * @description `callReadOnlyFunction` wrappers for all 12 REXONOBIT contracts.
+ * These are free (no gas) and require no wallet connection. They fetch data
+ * from the Stacks API endpoint configured in `STACKS_API_URL`.
+ * All functions return typed values or `null`/`0` on error.
+ */
+
 import { STACKS_API_URL, DEPLOYER_ADDRESS, CONTRACT_NAMES } from "./network";
 
 interface ReadCallOptions {
