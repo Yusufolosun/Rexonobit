@@ -1,10 +1,10 @@
 ;; labor-market.clar
-;; REXONOBIT — On-Chain Gig Board
+;; REXONOBIT -- On-Chain Gig Board
 ;; Members post tasks with STX bounties. Others bid and complete them.
 ;; Completion requires 2-of-3: poster + 1 neutral circle member.
 ;; Disputes escalate to arbitration.clar.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u500))
 (define-constant ERR-NOT-A-MEMBER        (err u501))
 (define-constant ERR-TASK-NOT-FOUND      (err u502))
@@ -21,13 +21,13 @@
 (define-constant ERR-PROTOCOL-PAUSED     (err u513))
 (define-constant ERR-NOT-IN-CIRCLE       (err u514))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
 (define-constant PROTOCOL-CFG .protocol-config)
 (define-constant ARBITRATION  .arbitration)
 
-;; ─── Task status ─────────────────────────────────────────────────────────────
+;; --- Task status -------------------------------------------------------------
 (define-constant TASK-OPEN       u1)
 (define-constant TASK-ASSIGNED   u2)
 (define-constant TASK-REVIEW     u3)   ;; worker submitted, awaiting attestation
@@ -35,7 +35,7 @@
 (define-constant TASK-DISPUTED   u5)
 (define-constant TASK-CANCELLED  u6)
 
-;; ─── Task records ────────────────────────────────────────────────────────────
+;; --- Task records ------------------------------------------------------------
 (define-data-var task-nonce uint u0)
 
 (define-map tasks
@@ -55,13 +55,13 @@
   }
 )
 
-;; ─── Bids ────────────────────────────────────────────────────────────────────
+;; --- Bids --------------------------------------------------------------------
 (define-map bids
   { task-id: uint, bidder: principal }
   { proposed-at: uint, message: (string-utf8 256) }
 )
 
-;; ─── Completion attestations (poster + neutral = 2-of-2 minimum) ─────────────
+;; --- Completion attestations (poster + neutral = 2-of-2 minimum) -------------
 (define-map attestations
   { task-id: uint, attestor: principal }
   { attested-at: uint, approved: bool }
@@ -72,7 +72,7 @@
   { approvals: uint, rejections: uint }
 )
 
-;; ─── Post a task ─────────────────────────────────────────────────────────────
+;; --- Post a task -------------------------------------------------------------
 (define-public (post-task
     (circle-id   uint)
     (title       (string-utf8 128))
@@ -84,8 +84,8 @@
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (> bounty u0)                                        ERR-ZERO-BOUNTY)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
     ;; Lock bounty in contract
     (try! (stx-transfer? bounty caller (as-contract tx-sender)))
     (map-set tasks { task-id: task-id }
@@ -101,7 +101,7 @@
   )
 )
 
-;; ─── Bid on a task ───────────────────────────────────────────────────────────
+;; --- Bid on a task -----------------------------------------------------------
 (define-public (bid-task (task-id uint) (message (string-utf8 256)))
   (let (
     (caller tx-sender)
@@ -110,7 +110,7 @@
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status task) TASK-OPEN)                  ERR-TASK-NOT-OPEN)
     (asserts! (not (is-eq caller (get poster task)))               ERR-SELF-BID)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
     (asserts! (is-none (map-get? bids { task-id: task-id, bidder: caller }))
               ERR-ALREADY-BID)
     (map-set bids { task-id: task-id, bidder: caller }
@@ -119,7 +119,7 @@
   )
 )
 
-;; ─── Accept a bid (poster assigns worker) ────────────────────────────────────
+;; --- Accept a bid (poster assigns worker) ------------------------------------
 (define-public (accept-bid (task-id uint) (worker principal))
   (let (
     (caller tx-sender)
@@ -138,7 +138,7 @@
   )
 )
 
-;; ─── Worker submits completion ────────────────────────────────────────────────
+;; --- Worker submits completion ------------------------------------------------
 (define-public (submit-completion (task-id uint))
   (let (
     (caller tx-sender)
@@ -153,7 +153,7 @@
   )
 )
 
-;; ─── Attest completion (poster or neutral circle member) ─────────────────────
+;; --- Attest completion (poster or neutral circle member) ---------------------
 (define-public (attest (task-id uint) (approved bool))
   (let (
     (caller  tx-sender)
@@ -168,7 +168,7 @@
     ;; Attestor must be poster OR circle member (not the worker)
     (asserts!
       (or (is-eq caller (get poster task))
-          (contract-call? REGISTRY is-circle-member (get circle-id task) caller))
+          (contract-call? .cooperative-registry is-circle-member (get circle-id task) caller))
       ERR-NOT-ATTESTOR)
     (asserts! (not (is-eq (some caller) (get worker task)))         ERR-NOT-AUTHORIZED)
     (map-set attestations { task-id: task-id, attestor: caller }
@@ -179,10 +179,10 @@
     )
       (map-set task-attest-count { task-id: task-id }
         { approvals: new-approvals, rejections: new-rejections })
-      ;; 2 approvals → release payment
+      ;; 2 approvals -> release payment
       (if (>= new-approvals u2)
         (release-payment task-id task)
-        ;; 2 rejections → re-open for worker to resubmit
+        ;; 2 rejections -> re-open for worker to resubmit
         (if (>= new-rejections u2)
           (begin
             (map-set tasks { task-id: task-id }
@@ -196,19 +196,21 @@
   )
 )
 
-;; ─── Internal: release payment to worker ─────────────────────────────────────
+;; --- Internal: release payment to worker -------------------------------------
 (define-private (release-payment (task-id uint) (task { poster: principal, circle-id: uint, title: (string-utf8 128), description: (string-utf8 512), bounty: uint, status: uint, worker: (optional principal), created-at: uint, assigned-at: uint, completed-at: uint, dispute-id: uint }))
   (let ((worker (unwrap! (get worker task) ERR-TASK-NOT-ASSIGNED)))
     (try! (as-contract (stx-transfer? (get bounty task) tx-sender worker)))
     (map-set tasks { task-id: task-id }
       (merge task { status: TASK-COMPLETE, completed-at: block-height }))
-    ;; Reward trust score for completing a task
-    (try! (as-contract (contract-call? TRUST reward-labor worker u15)))
+    ;; Reward trust score for completing a task (best-effort)
+    (match (as-contract (contract-call? .trust-score reward-labor worker u15))
+      success true
+      error true)
     (ok true)
   )
 )
 
-;; ─── Dispute a task ──────────────────────────────────────────────────────────
+;; --- Dispute a task ----------------------------------------------------------
 (define-public (dispute-task
     (task-id  uint)
     (reason   (string-utf8 512))
@@ -231,7 +233,7 @@
       ERR-TASK-NOT-ASSIGNED)
     ;; Open a dispute in the arbitration contract (caller pays the arb fee)
     (let (
-      (dispute-id (try! (contract-call? ARBITRATION open-dispute
+      (dispute-id (try! (contract-call? .arbitration open-dispute
                           respondent (get circle-id task) reason evidence)))
     )
       (map-set tasks { task-id: task-id }
@@ -241,7 +243,7 @@
   )
 )
 
-;; ─── Cancel a task (poster only, while open) ─────────────────────────────────
+;; --- Cancel a task (poster only, while open) ---------------------------------
 (define-public (cancel-task (task-id uint))
   (let (
     (caller tx-sender)
@@ -258,7 +260,7 @@
   )
 )
 
-;; ─── Read-only ───────────────────────────────────────────────────────────────
+;; --- Read-only ---------------------------------------------------------------
 (define-read-only (get-task (task-id uint))
   (map-get? tasks { task-id: task-id })
 )
@@ -277,7 +279,7 @@
 
 (define-read-only (get-total-tasks) (ok (var-get task-nonce)))
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
