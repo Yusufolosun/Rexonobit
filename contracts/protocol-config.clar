@@ -1,9 +1,9 @@
 ;; protocol-config.clar
-;; REXONOBIT — Global Protocol Parameters & Admin
+;; REXONOBIT -- Global Protocol Parameters & Admin
 ;; Governance-controlled contract holding all tunable protocol parameters.
 ;; Multi-sig principal guards all mutations; emergency-pause halts the protocol.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED        (err u1000))
 (define-constant ERR-PARAM-NOT-FOUND       (err u1001))
 (define-constant ERR-INVALID-VALUE         (err u1002))
@@ -11,24 +11,24 @@
 (define-constant ERR-ALREADY-INITIALIZED   (err u1004))
 (define-constant ERR-ZERO-VALUE            (err u1005))
 
-;; ─── Protocol version ────────────────────────────────────────────────────────
+;; --- Protocol version --------------------------------------------------------
 (define-constant PROTOCOL-VERSION u1)
 
-;; ─── Admin principal (set once at deploy; transfer via propose-admin) ─────────
+;; --- Admin principal (set once at deploy; transfer via propose-admin) ---------
 (define-data-var admin principal tx-sender)
 (define-data-var pending-admin (optional principal) none)
 
-;; ─── Emergency pause flag ────────────────────────────────────────────────────
+;; --- Emergency pause flag ----------------------------------------------------
 (define-data-var protocol-paused bool false)
 
-;; ─── Parameter store ─────────────────────────────────────────────────────────
+;; --- Parameter store ---------------------------------------------------------
 ;; All values are uint. Semantics are documented per key below.
 (define-map params
   { key: (string-ascii 64) }
   { value: uint, last-updated: uint, updated-by: principal }
 )
 
-;; ─── Parameter change log (append-only audit trail) ─────────────────────────
+;; --- Parameter change log (append-only audit trail) -------------------------
 (define-data-var param-change-nonce uint u0)
 (define-map param-change-log
   { nonce: uint }
@@ -36,7 +36,7 @@
     changed-by: principal, at-block: uint }
 )
 
-;; ─── Default parameter initialization ───────────────────────────────────────
+;; --- Default parameter initialization ---------------------------------------
 (define-data-var initialized bool false)
 
 (define-public (initialize)
@@ -70,6 +70,13 @@
       { value: u2, last-updated: block-height, updated-by: tx-sender })
     (map-set params { key: "endorsement-cooldown-blocks" }
       { value: u1008, last-updated: block-height, updated-by: tx-sender })
+    ;; Trust-score reward cooldowns
+    (map-set params { key: "savings-reward-cooldown-blocks" }
+      { value: u144, last-updated: block-height, updated-by: tx-sender })
+    (map-set params { key: "loan-reward-cooldown-blocks" }
+      { value: u144, last-updated: block-height, updated-by: tx-sender })
+    (map-set params { key: "labor-reward-cooldown-blocks" }
+      { value: u144, last-updated: block-height, updated-by: tx-sender })
     ;; Lending
     (map-set params { key: "loan-fee-bps" }
       { value: u200, last-updated: block-height, updated-by: tx-sender })
@@ -122,7 +129,7 @@
   )
 )
 
-;; ─── Read parameter ──────────────────────────────────────────────────────────
+;; --- Read parameter ----------------------------------------------------------
 (define-read-only (get-param (key (string-ascii 64)))
   (match (map-get? params { key: key })
     entry (ok (get value entry))
@@ -137,10 +144,10 @@
   )
 )
 
-;; ─── Governance contract reference ────────────────────────────────────────────
+;; --- Governance contract reference --------------------------------------------
 (define-constant GOVERNANCE .governance)
 
-;; ─── Write parameter (admin or governance contract only) ──────────────────────
+;; --- Write parameter (admin or governance contract only) ----------------------
 (define-public (set-param (key (string-ascii 64)) (new-value uint))
   (let (
     (caller tx-sender)
@@ -163,7 +170,7 @@
   )
 )
 
-;; ─── Emergency pause / resume ────────────────────────────────────────────────
+;; --- Emergency pause / resume ------------------------------------------------
 (define-public (emergency-pause)
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) ERR-NOT-AUTHORIZED)
@@ -180,7 +187,7 @@
   )
 )
 
-;; ─── Admin transfer (2-step) ─────────────────────────────────────────────────
+;; --- Admin transfer (2-step) -------------------------------------------------
 (define-public (propose-admin (new-admin principal))
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) ERR-NOT-AUTHORIZED)
@@ -198,7 +205,7 @@
   )
 )
 
-;; ─── Read-only helpers ───────────────────────────────────────────────────────
+;; --- Read-only helpers -------------------------------------------------------
 (define-read-only (get-admin)         (ok (var-get admin)))
 (define-read-only (get-pending-admin) (ok (var-get pending-admin)))
 (define-read-only (is-paused)         (ok (var-get protocol-paused)))
