@@ -49,4 +49,23 @@ describe("lending-pool", () => {
       expect(result).toBeErr(Cl.uint(413));
     });
   });
+
+  describe("get-max-loan-amount", () => {
+    it("returns score * multiplier matching request-loan formula", () => {
+      setupWithCircle();
+      // Bob has trust score = 100 (seed), default multiplier = 5
+      // So max loan = 100 * 5 = 500
+      const result = simnet.callReadOnlyFn("lending-pool", "get-max-loan-amount", [Cl.principal(bob)], deployer);
+      expect(result.result).toBeOk(Cl.uint(500));
+    });
+
+    it("max loan increases when trust score increases", () => {
+      setupWithCircle();
+      simnet.mineEmptyBlocks(145);
+      simnet.callPublicFn("trust-score", "reward-savings", [Cl.principal(bob), Cl.uint(100)], deployer);
+      // Bob now has score = 200, multiplier = 5, so max = 1000
+      const result = simnet.callReadOnlyFn("lending-pool", "get-max-loan-amount", [Cl.principal(bob)], deployer);
+      expect(result.result).toBeOk(Cl.uint(1000));
+    });
+  });
 });
