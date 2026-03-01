@@ -1,4 +1,4 @@
-// No default React import needed — JSX transform handles it;
+// No default React import needed — JSX transform handles it
 
 // ---------------------------------------------------------------------------
 // ProgressBar — accessible, reusable progress indicator
