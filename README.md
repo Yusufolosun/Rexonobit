@@ -2,69 +2,73 @@
 
 **Bitcoin-Native Cooperative Credit Protocol on Stacks**
 
-A decentralized cooperative economy protocol built on the [Stacks](https://www.stacks.co/) blockchain — 12 Clarity smart contracts, a React frontend, and zero backend infrastructure. Members form cooperative circles, save in STX, build on-chain credit reputation, borrow against trust, work gig jobs with multi-party attestation, and govern their own economy through trust-weighted voting.
+A decentralized cooperative economy protocol built on the [Stacks](https://www.stacks.co/) blockchain. Members form cooperative circles, pool savings in STX, build on-chain credit reputation, borrow against trust, work gig jobs with multi-party attestation, and govern their own economy through trust-weighted voting — all without backend servers or off-chain dependencies.
 
-[![Clarinet](https://img.shields.io/badge/Clarinet-v1.7.1-blue)](https://docs.hiro.so/clarinet/getting-started)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Stacks](https://img.shields.io/badge/Stacks-Epoch%202.4-blueviolet)](https://www.stacks.co/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb)](https://react.dev/)
+[![Tests](https://img.shields.io/badge/Tests-56%20passing-brightgreen)]()
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
+- [What is Rexonobit?](#what-is-rexonobit)
+- [Protocol Features](#protocol-features)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
-- [Configuration](#configuration)
 - [Testing](#testing)
+- [Configuration](#configuration)
 - [Deployment](#deployment)
 - [Project Structure](#project-structure)
 - [Error Codes](#error-codes)
 - [Security](#security)
 - [Roadmap](#roadmap)
-- [Contributing](#contributing)
 - [Documentation](#documentation)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
 
-## Overview
+## What is Rexonobit?
 
-REXONOBIT targets communities — particularly in emerging markets — where informal savings groups (**Susu**, **Tontines**, **Chit Funds**) already operate at scale. It replaces trust-based paper ledgers with transparent, Bitcoin-settled smart contracts.
+Rexonobit targets communities — particularly in emerging markets — where informal savings groups (**Susu**, **Tontines**, **Chit Funds**) already operate at scale. It replaces trust-based paper ledgers with transparent, Bitcoin-settled smart contracts.
 
-This is not a DEX. It is not an NFT marketplace. It is **cooperative financial infrastructure**: permissionless, auditable, and fully on-chain with no backend servers.
+This is not a DEX, a lending aggregator, or an NFT marketplace. It is **cooperative financial infrastructure**: permissionless, auditable, and fully on-chain.
 
-### Project Metrics
+### Why Stacks?
+
+Stacks settles on Bitcoin L1 while providing expressive smart contracts via [Clarity](https://docs.stacks.co/clarity/overview). Rexonobit exploits this to give cooperatives Bitcoin-grade finality without the gas costs of Ethereum or the trust assumptions of L2 sidechains.
+
+### At a Glance
 
 | Metric | Value |
 |--------|-------|
-| Smart contracts | 12 Clarity 2 contracts (~2,900 LOC) |
-| Frontend | 101 TypeScript/React source files (~10,800 LOC) |
-| Test suite | 30 test files (~5,500 LOC) |
+| Smart contracts | 12 Clarity v2 contracts (~3,100 LOC) |
+| Frontend | 102 TypeScript / React source files |
+| Test suite | 7 test files — 56 tests passing (Clarinet SDK v3 + vitest) |
 | Backend | None — pure on-chain reads via Stacks API |
 
 ---
 
-## Features
+## Protocol Features
 
-| Feature | Contract | Description |
-|---------|----------|-------------|
-| Member registration & circles | `cooperative-registry` | Create/join cooperatives, vouch for members |
-| STX savings with streaks | `savings-vault` | Time-locked deposits with streak tracking |
-| Soulbound credit reputation | `trust-score` | On-chain reputation score (0–1000) from savings, repayments, participation |
-| Circle-backed micro-loans | `lending-pool` | Borrow against trust score — no external credit checks |
-| Rotating savings (ROSCA) | `rosca` | Automated Susu/Tontine cycle management |
-| Gig board with attestation | `labor-market` | Post tasks, bid, accept, multi-party work attestation |
+| Feature | Contract | What it Does |
+|---------|----------|--------------|
+| Cooperative circles | `cooperative-registry` | Create / join cooperatives, vouch for members, manage circle membership |
+| STX savings with streaks | `savings-vault` | Time-locked deposits with consecutive-deposit streak tracking |
+| On-chain credit reputation | `trust-score` | Composite reputation score (0–1 000) derived from savings, repayments, and participation |
+| Circle-backed micro-loans | `lending-pool` | Borrow against trust score — no external credit bureau required |
+| Rotating savings (ROSCA) | `rosca` | Automated Susu / Tontine cycle management with payout rotation |
+| Gig board & attestation | `labor-market` | Post tasks, bid, accept, multi-party work attestation |
 | Circle treasury | `treasury` | Proposal-based spend controls for cooperative funds |
-| Trust-weighted governance | `governance` | Proposal → vote → execute → veto lifecycle |
-| Soulbound NFT badges | `reputation-nft` | Non-transferable milestone achievement NFTs |
-| Dispute resolution | `arbitration` | Decentralized 3-member arbitration panels |
-| Synthetic credit | `synthetic-credit` | BTC-denominated credit lines backed by collateral + trust |
-| Protocol parameters | `protocol-config` | Global configuration and emergency controls |
+| Trust-weighted governance | `governance` | Full proposal lifecycle: create → vote → execute → veto |
+| Soulbound NFT badges | `reputation-nft` | Non-transferable milestone achievement NFTs (SIP-009 compatible) |
+| Dispute resolution | `arbitration` | Decentralized 3-member arbitration panels with stake-weighted voting |
+| Synthetic credit lines | `synthetic-credit` | BTC-denominated credit backed by collateral + trust score |
+| Protocol parameters | `protocol-config` | Global configuration registry and emergency pause controls |
 
 ---
 
@@ -90,18 +94,19 @@ This is not a DEX. It is not an NFT marketplace. It is **cooperative financial i
 [protocol-config] ─── parameters for all ───────┘
 ```
 
+Every contract that mutates financial state checks membership via `cooperative-registry` and, where applicable, validates trust via `trust-score`. `protocol-config` provides tunable parameters (interest rates, quorum thresholds, cooldown periods) and an emergency pause switch honoured by all contracts.
+
 ### Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Smart contracts | Clarity 2 — Stacks blockchain (Epoch 2.4) |
+| Smart contracts | Clarity v2 — Stacks blockchain (Epoch 2.4) |
+| Contract testing | Clarinet SDK v3 (`@stacks/clarinet-sdk`) + vitest 3 |
 | Frontend | React 19, TypeScript 5.9, Vite 7 |
-| Wallet | [Hiro Wallet](https://wallet.hiro.so/) via `@stacks/connect` |
+| Wallet integration | [Hiro Wallet](https://wallet.hiro.so/) via `@stacks/connect` |
 | Transactions | `@stacks/transactions` for contract calls |
-| On-chain reads | Stacks Blockchain API (no server required) |
-| Testing | Clarinet v1.7.1 (Deno runtime) |
+| On-chain reads | Stacks Blockchain API — no backend server required |
 | CI/CD | GitHub Actions (typecheck, lint, build, test, CodeQL, audit) |
-| Deployment | Vercel (frontend), Stacks mainnet/testnet (contracts) |
 
 ---
 
@@ -109,49 +114,84 @@ This is not a DEX. It is not an NFT marketplace. It is **cooperative financial i
 
 | Tool | Version | Install |
 |------|---------|---------|
-| [Clarinet](https://docs.hiro.so/clarinet/getting-started) | ≥ 1.7.1 | `brew install clarinet` or [installer](https://github.com/hirosystems/clarinet/releases) |
+| [Clarinet](https://docs.hiro.so/clarinet/getting-started) | Latest | `brew install clarinet` or [releases](https://github.com/hirosystems/clarinet/releases) |
 | [Node.js](https://nodejs.org/) | ≥ 18 | `nvm install 18` or [download](https://nodejs.org/) |
-| [Hiro Wallet](https://wallet.hiro.so/) | Latest | Browser extension |
+| [npm](https://www.npmjs.com/) | ≥ 9 | Ships with Node.js |
+| [Hiro Wallet](https://wallet.hiro.so/) | Latest | Browser extension (for frontend interaction) |
 
 ---
 
 ## Getting Started
 
-### 1. Clone the Repository
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/Yusufolosun/Rexonobit.git
 cd Rexonobit
+npm install            # Install test dependencies (vitest, clarinet-sdk)
 ```
 
-### 2. Validate Smart Contracts
+### 2. Validate contracts
 
 ```bash
-clarinet check                # Syntax validation for all 12 contracts
-clarinet console              # Launch interactive Clarity REPL
+clarinet check         # Syntax-check all 12 Clarity contracts
+clarinet console       # Launch interactive Clarity REPL
 ```
 
-### 3. Run Tests
+### 3. Run the test suite
 
 ```bash
-clarinet test                 # Run all 30 test files
-clarinet test --costs         # With execution cost reporting
-clarinet test --coverage      # With coverage report
+npx vitest run         # Run all 56 tests across 7 test files
+npx vitest run --reporter=verbose   # Verbose output
 ```
 
-### 4. Start the Frontend
+### 4. Start the frontend
 
 ```bash
 cd frontend
-cp .env.example .env          # Configure deployer address and network
+cp .env.example .env   # Configure deployer address and network
 npm install
-npm run dev                   # http://localhost:5173
+npm run dev            # http://localhost:5173
 ```
 
-### 5. Start Local Devnet
+### 5. Local devnet
 
 ```bash
-clarinet devnet start         # Deploys all 12 contracts to local devnet
+clarinet devnet start  # Deploys all 12 contracts to a local Stacks devnet
+```
+
+---
+
+## Testing
+
+The test suite uses **Clarinet SDK v3** with **vitest** (forked process pool). All tests run against a simulated Stacks network — no external nodes required.
+
+| Test File | Scope |
+|-----------|-------|
+| `protocol-config.test.ts` | Global parameters, pause/unpause, access control |
+| `cooperative-registry.test.ts` | Circle creation, membership, vouching, suspension |
+| `trust-score.test.ts` | Score updates, category weights, pause guards |
+| `savings-vault.test.ts` | Deposits, withdrawals, streak tracking |
+| `lending-pool.test.ts` | Loan origination, repayment, interest, max-loan formula |
+| `synthetic-credit.test.ts` | Credit line issuance, collateral management |
+| `integration.test.ts` | Cross-contract flows (registration → savings → trust → loans) |
+
+```bash
+npx vitest run                     # Run all tests
+npx vitest run tests/lending-pool  # Run a single file
+npx vitest --watch                 # Watch mode during development
+```
+
+> 31 legacy Deno-era test files are preserved in `tests/legacy/` for reference but are not part of the active test suite.
+
+### Makefile Shortcuts
+
+```bash
+make check          # clarinet check
+make test           # npx vitest run
+make typecheck      # TypeScript type-check (frontend)
+make lint           # ESLint (frontend)
+make ci             # Full pipeline: install → typecheck → lint → build → test
 ```
 
 ---
@@ -169,30 +209,7 @@ Create `frontend/.env` from `frontend/.env.example`:
 | `VITE_STACKS_API_URL` | No | Override Stacks API node URL |
 | `VITE_EXPLORER_URL` | No | Explorer base URL for transaction links |
 
-> **Warning:** Never commit `.env` — it is gitignored.
-
----
-
-## Testing
-
-30 Clarinet test files organized into three categories:
-
-| Category | Count | Purpose |
-|----------|-------|---------|
-| Unit tests | 12 | One per contract — core function validation |
-| Integration tests | 12 | Cross-contract interaction flows |
-| Lifecycle tests | 6 | End-to-end scenarios (ROSCA, loans, arbitration, treasury, trust-score, lending) |
-
-### Makefile Targets
-
-```bash
-make check              # Syntax-check all Clarity contracts
-make test               # Run all Clarinet tests
-make test-integration   # Run only integration test files
-make typecheck          # TypeScript type-check (frontend)
-make lint               # ESLint (frontend)
-make ci                 # Full pipeline: install → typecheck → lint → build → test
-```
+> **Warning:** Never commit `.env` — it is gitignored. Only `.env.example` is tracked.
 
 ---
 
@@ -207,17 +224,10 @@ make deploy-testnet     # Requires STACKS_PRIVATE_KEY env variable
 ### Mainnet
 
 ```bash
-make deploy-mainnet     # Requires --confirm-mainnet flag and funded deployer
+make deploy-mainnet     # Requires --confirm-mainnet flag and a funded deployer wallet
 ```
 
-### Cost Estimate
-
-| Item | Estimated Cost |
-|------|---------------|
-| 12 contract deployments (one-time) | ~60 STX |
-| Per-user transaction | ~5,000 µSTX (~$0.001) |
-| Frontend hosting (Vercel) | Free |
-| Backend | None |
+> Private keys are **never** stored in source files. Deployment scripts read credentials exclusively from environment variables.
 
 ---
 
@@ -225,7 +235,7 @@ make deploy-mainnet     # Requires --confirm-mainnet flag and funded deployer
 
 ```
 Rexonobit/
-├── contracts/              # 12 Clarity smart contracts
+├── contracts/              # 12 Clarity v2 smart contracts
 │   ├── protocol-config.clar
 │   ├── cooperative-registry.clar
 │   ├── savings-vault.clar
@@ -238,7 +248,8 @@ Rexonobit/
 │   ├── reputation-nft.clar
 │   ├── arbitration.clar
 │   └── synthetic-credit.clar
-├── tests/                  # 30 Clarinet test files (Deno/TypeScript)
+├── tests/                  # 7 active vitest test files (56 tests)
+│   └── legacy/             # 31 archived Deno-era test files
 ├── frontend/
 │   └── src/
 │       ├── components/     # React UI components
@@ -247,44 +258,50 @@ Rexonobit/
 │       └── lib/            # Utilities (format, math, api, errors, datetime)
 ├── docs/                   # Architecture docs, component docs, hook docs
 ├── scripts/                # Deployment scripts (testnet, mainnet)
-├── settings/               # Clarinet network configs
+├── settings/               # Network configs (only Devnet.toml is tracked)
 ├── Clarinet.toml           # Contract manifest
-├── Makefile                # Build/test/deploy automation
-└── .github/workflows/      # CI: typecheck, lint, build, test, CodeQL, audit
+├── vitest.config.ts        # Test runner configuration
+├── Makefile                # Build / test / deploy automation
+└── package.json            # Root dependencies (clarinet-sdk, vitest)
 ```
 
 ---
 
 ## Error Codes
 
-All contract errors follow the `(err uXXX)` pattern. Use `parseContractError()` from `frontend/src/lib/parseError.ts` to map error codes to user-facing messages.
+All contract errors follow the `(err uXXX)` pattern. The frontend's `parseContractError()` utility maps numeric codes to user-facing messages.
 
-| Range | Contract | Example |
-|-------|----------|---------|
-| 100–109 | `cooperative-registry` | `u102` — Not a registered member |
-| 200–205 | `savings-vault` | `u203` — Vault is locked |
-| 300–308 | `lending-pool` | `u301` — Pool has insufficient liquidity |
-| 400–410 | `rosca` | `u404` — Not a ROSCA member |
-| 500–508 | `governance` | `u503` — Already voted on this proposal |
-| 600–605 | `treasury` | `u603` — Spend exceeds treasury balance |
-| 700–702 | `trust-score` | `u701` — Score update too frequent |
-| 800–803 | `reputation-nft` | `u802` — Milestone requirements not met |
-| 900–910 | `labor-market` | `u907` — Bid exceeds task budget |
-| 1000–1007 | `arbitration` | `u1006` — Cannot dispute own task |
-| 1100–1104 | `synthetic-credit` | `u1100` — Insufficient collateral |
-| 1200–1202 | `protocol-config` | `u1201` — Unauthorized, deployer only |
+| Range | Contract |
+|-------|----------|
+| u100 – u116 | `cooperative-registry` |
+| u200 – u210 | `savings-vault` |
+| u300 – u306 | `trust-score` |
+| u400 – u414 | `lending-pool` |
+| u500 – u514 | `labor-market` |
+| u600 – u613 | `treasury` |
+| u700 – u712 | `governance` |
+| u800 – u815 | `rosca` |
+| u900 – u907 | `reputation-nft` |
+| u1000 – u1005 | `protocol-config` |
+| u1000 – u1012 | `arbitration` |
+| u1100 – u1109 | `synthetic-credit` |
+
+> `protocol-config` and `arbitration` share the u1000 range. Codes are disambiguated by the contract principal in the error response.
 
 ---
 
 ## Security
 
-- All private keys, mnemonics, and wallet files are gitignored
-- `.env` files are never committed — only `.env.example` is tracked
-- Clarinet `settings/Mainnet.toml` and `settings/Testnet.toml` are gitignored
-- GitHub Actions runs `npm audit` and [Gitleaks](https://github.com/gitleaks/gitleaks) on every push
-- [CodeQL](https://codeql.github.com/) static analysis runs on push and weekly schedule
+Rexonobit treats key material protection as a first-class concern:
 
-For vulnerability reporting, see [SECURITY.md](SECURITY.md).
+- **Private keys, mnemonics, seed phrases, and wallet files** are covered by 15+ gitignore rules — they cannot be accidentally committed
+- **`.env` files** are never tracked; only `.env.example` templates are committed
+- **Network configs** — `settings/Mainnet.toml` and `settings/Testnet.toml` are gitignored; only `Devnet.toml` (local-only, no real keys) is tracked
+- **Deployment scripts** read credentials exclusively from environment variables — no hardcoded secrets
+- **CI/CD** runs `npm audit` and [Gitleaks](https://github.com/gitleaks/gitleaks) on every push to detect leaked secrets
+- **[CodeQL](https://codeql.github.com/)** static analysis runs on push and on a weekly schedule
+
+For responsible vulnerability disclosure, see [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -295,19 +312,13 @@ For vulnerability reporting, see [SECURITY.md](SECURITY.md).
 | **V1 — Core** | `cooperative-registry`, `savings-vault`, `trust-score`, `lending-pool`, `rosca` | ✅ Complete |
 | **V2 — Economy** | `labor-market`, `treasury`, `governance`, `arbitration` | ✅ Complete |
 | **V3 — Advanced** | `reputation-nft`, `synthetic-credit`, `protocol-config` | ✅ Complete |
-| **V4 — Audit & Launch** | Third-party audit, mainnet deployment, DAO handoff | Planned |
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, contract conventions, commit guidelines, and pull request process.
+| **V4 — Audit & Launch** | Third-party security audit, mainnet deployment, DAO handoff | Planned |
 
 ---
 
 ## Documentation
 
-Detailed architecture and API documentation is in the [`docs/`](docs/) directory:
+Detailed architecture and protocol mechanics documentation lives in the [`docs/`](docs/) directory:
 
 | Document | Description |
 |----------|-------------|
@@ -323,6 +334,12 @@ Detailed architecture and API documentation is in the [`docs/`](docs/) directory
 | [Reputation NFT Mechanics](docs/architecture/reputation-nft-mechanics.md) | Soulbound badge minting criteria |
 | [Synthetic Credit Mechanics](docs/architecture/synthetic-credit-mechanics.md) | Credit line issuance and collateral |
 | [Protocol Config Reference](docs/architecture/protocol-config-reference.md) | Global parameter registry |
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, contract conventions, commit guidelines, and pull request process.
 
 ---
 
