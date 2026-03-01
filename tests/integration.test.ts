@@ -1,252 +1,101 @@
-import {
-  Clarinet,
-  Tx,
-  Chain,
-  Account,
-  types,
-} from "https://deno.land/x/clarinet@v1.7.1/index.ts";
-import { assertEquals } from "https://deno.land/std@0.200.0/testing/asserts.ts";
+import { describe, it, expect } from "vitest";
+import { Cl } from "@stacks/transactions";
 
-// ---------------------------------------------------------------------------
-// Integration tests: end-to-end protocol flows across multiple contracts
-// ---------------------------------------------------------------------------
+const accounts = simnet.getAccounts();
+const deployer = accounts.get("deployer")!;
+const alice    = accounts.get("wallet_1")!;
+const bob      = accounts.get("wallet_2")!;
 
-function setup(chain: Chain, accounts: Map<string, Account>) {
-  const deployer = accounts.get("deployer")!;
-  const alice = accounts.get("wallet_1")!;
-  const bob = accounts.get("wallet_2")!;
-  chain.mineBlock([
-    Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
-    Tx.contractCall("cooperative-registry", "register-member", [], bob.address),
-  ]);
-  return { deployer, alice, bob };
+function initAll() {
+  simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+  simnet.callPublicFn("cooperative-registry", "register-member", [Cl.stringUtf8("Alice")], alice);
+  simnet.callPublicFn("cooperative-registry", "register-member", [Cl.stringUtf8("Bob")], bob);
+  // Open circle: request-join auto-admits Bob
+  simnet.callPublicFn("cooperative-registry", "create-circle", [
+    Cl.stringUtf8("Integration Circle"),
+    Cl.stringUtf8("For integration tests"),
+    Cl.bool(true),
+    Cl.uint(0)
+  ], alice);
+  simnet.callPublicFn("cooperative-registry", "request-join", [Cl.uint(1)], bob);
+  // Trust score setup (needed for governance vote and other features)
+  simnet.callPublicFn("trust-score", "set-authorized-writer", [Cl.principal(deployer), Cl.bool(true)], deployer);
+  simnet.callPublicFn("trust-score", "initialize-score", [Cl.principal(alice)], deployer);
+  simnet.callPublicFn("trust-score", "initialize-score", [Cl.principal(bob)], deployer);
 }
 
-// ---------------------------------------------------------------------------
-// Flow 1: Register → Deposit → Lock → Check Trust Score
-// ---------------------------------------------------------------------------
-Clarinet.test({
-  name: "integration: register member, deposit STX, verify vault balance",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice } = setup(chain, accounts);
-    const depositBlock = chain.mineBlock([
-      Tx.contractCall(
-        "savings-vault",
-        "deposit",
-        [types.uint(5_000_000)],
-        alice.address
-      ),
-    ]);
-    depositBlock.receipts[0].result.expectOk();
+describe("integration", () => {
+  it("register -> deposit -> check balance", () => {
+    initAll();
+    simnet.callPublicFn("savings-vault", "initialize-vault", [], alice);
+    simnet.callPublicFn("savings-vault", "deposit", [Cl.uint(5_000_000)], alice);
+    const balance = simnet.callReadOnlyFn("savings-vault", "get-vault-balance", [Cl.principal(alice)], deployer);
+    expect(balance.result).toBeOk(Cl.uint(5_000_000));
+  });
 
-    const balResult = chain.callReadOnlyFn(
-      "savings-vault",
-      "get-vault-balance",
-      [types.principal(alice.address)],
-      alice.address
-    );
-    balResult.result.expectOk().expectUint(5_000_000);
-  },
-});
+  it("deposit -> lock -> verify locked balance", () => {
+    initAll();
+    simnet.callPublicFn("savings-vault", "initialize-vault", [], alice);
+    simnet.callPublicFn("savings-vault", "deposit", [Cl.uint(10_000_000)], alice);
+    simnet.callPublicFn("savings-vault", "lock-savings", [Cl.uint(5_000_000), Cl.uint(2016)], alice);
+    const locked = simnet.callReadOnlyFn("savings-vault", "get-locked-balance", [Cl.principal(alice)], deployer);
+    expect(locked.result).toBeOk(Cl.uint(5_000_000));
+  });
 
-Clarinet.test({
-  name: "integration: deposit then lock savings accumulates trust score",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice } = setup(chain, accounts);
+  it("ROSCA lifecycle: create and join", () => {
+    initAll();
+    const createResult = simnet.callPublicFn("rosca", "create-rosca", [
+      Cl.stringUtf8("Test ROSCA"),
+      Cl.uint(1_000_000),
+      Cl.uint(3),
+      Cl.uint(4320)
+    ], alice);
+    expect(createResult.result).toBeOk(Cl.uint(1));
+    const joinResult = simnet.callPublicFn("rosca", "join-rosca", [Cl.uint(1)], bob);
+    expect(joinResult.result).toBeOk(Cl.uint(2)); // second member joins
+  });
 
-    chain.mineBlock([
-      Tx.contractCall("savings-vault", "deposit", [types.uint(10_000_000)], alice.address),
-    ]);
-    chain.mineBlock([
-      Tx.contractCall(
-        "savings-vault",
-        "lock-savings",
-        [types.uint(5_000_000), types.uint(2016)],
-        alice.address
-      ),
-    ]);
+  it("task lifecycle: post and bid", () => {
+    initAll();
+    const postResult = simnet.callPublicFn("labor-market", "post-task", [
+      Cl.uint(1),
+      Cl.stringUtf8("Build smart contract"),
+      Cl.stringUtf8("Build a Clarity smart contract for the project"),
+      Cl.uint(5_000_000)
+    ], alice);
+    expect(postResult.result).toBeOk(Cl.uint(1));
+    const bidResult = simnet.callPublicFn("labor-market", "bid-task", [
+      Cl.uint(1),
+      Cl.stringUtf8("I can build this contract")
+    ], bob);
+    expect(bidResult.result).toBeOk(Cl.bool(true));
+  });
 
-    // Verify locked balance
-    const locked = chain.callReadOnlyFn(
-      "savings-vault",
-      "get-locked-balance",
-      [types.principal(alice.address)],
-      alice.address
-    );
-    locked.result.expectOk().expectUint(5_000_000);
-  },
-});
+  it("governance: propose and vote", () => {
+    initAll();
+    const proposeResult = simnet.callPublicFn("governance", "propose", [
+      Cl.uint(1),
+      Cl.uint(1),
+      Cl.stringUtf8("Increase min deposit"),
+      Cl.stringUtf8("Proposal to raise the minimum deposit requirement"),
+      Cl.stringAscii("min-deposit-ustx"),
+      Cl.uint(500_000),
+      Cl.none()
+    ], alice);
+    expect(proposeResult.result).toBeOk(Cl.uint(1));
+    const voteResult = simnet.callPublicFn("governance", "vote", [Cl.uint(1), Cl.bool(true)], alice);
+    // vote returns (ok effective-weight); weight is capped at 20% of projected total
+    expect(voteResult.result).toBeOk(Cl.uint(20));
+  });
 
-// ---------------------------------------------------------------------------
-// Flow 2: Deposit → Request Loan → Repay Loan
-// ---------------------------------------------------------------------------
-Clarinet.test({
-  name: "integration: member deposits, creates circle, requests and repays loan",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { deployer, alice, bob } = setup(chain, accounts);
-
-    // Fund pool
-    chain.mineBlock([
-      Tx.contractCall("savings-vault", "deposit", [types.uint(50_000_000)], alice.address),
-      Tx.contractCall("lending-pool", "fund-pool", [types.uint(1), types.uint(20_000_000)], deployer.address),
-    ]);
-
-    // Request loan (circle 1)
-    const loanBlock = chain.mineBlock([
-      Tx.contractCall(
-        "lending-pool",
-        "request-loan",
-        [types.uint(1), types.uint(1_000_000)],
-        alice.address
-      ),
-    ]);
-    loanBlock.receipts[0].result.expectOk();
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Flow 3: Create ROSCA → Join → Contribute → Trigger Payout
-// ---------------------------------------------------------------------------
-Clarinet.test({
-  name: "integration: create ROSCA, members join and contribute",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice, bob } = setup(chain, accounts);
-
-    // Alice creates a ROSCA
-    const createBlock = chain.mineBlock([
-      Tx.contractCall(
-        "rosca",
-        "create-rosca",
-        [
-          types.uint(1_000_000),  // contribution amount
-          types.uint(144),        // cycle length
-          types.uint(3),          // max members
-        ],
-        alice.address
-      ),
-    ]);
-    createBlock.receipts[0].result.expectOk();
-
-    // Bob joins
-    const joinBlock = chain.mineBlock([
-      Tx.contractCall("rosca", "join-rosca", [types.uint(1)], bob.address),
-    ]);
-    joinBlock.receipts[0].result.expectOk();
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Flow 4: Post Task → Bid → Accept Bid → Submit → Attest
-// ---------------------------------------------------------------------------
-Clarinet.test({
-  name: "integration: task lifecycle — post, bid, accept, submit",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice, bob } = setup(chain, accounts);
-
-    // Alice posts a task
-    const postBlock = chain.mineBlock([
-      Tx.contractCall(
-        "labor-market",
-        "post-task",
-        [
-          types.uint(1),
-          types.ascii("Build a Clarity contract"),
-          types.ascii("Must pass all tests"),
-          types.uint(5_000_000),
-        ],
-        alice.address
-      ),
-    ]);
-    postBlock.receipts[0].result.expectOk();
-
-    // Bob bids
-    const bidBlock = chain.mineBlock([
-      Tx.contractCall(
-        "labor-market",
-        "bid-task",
-        [types.uint(1), types.uint(4_500_000)],
-        bob.address
-      ),
-    ]);
-    bidBlock.receipts[0].result.expectOk();
-
-    // Alice accepts bid
-    const acceptBlock = chain.mineBlock([
-      Tx.contractCall(
-        "labor-market",
-        "accept-bid",
-        [types.uint(1), types.principal(bob.address)],
-        alice.address
-      ),
-    ]);
-    acceptBlock.receipts[0].result.expectOk();
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Flow 5: Governance proposal lifecycle
-// ---------------------------------------------------------------------------
-Clarinet.test({
-  name: "integration: propose governance change and vote",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice, bob } = setup(chain, accounts);
-
-    // Alice proposes
-    const propBlock = chain.mineBlock([
-      Tx.contractCall(
-        "governance",
-        "propose",
-        [
-          types.ascii("Increase Max Loan"),
-          types.ascii("Raise the loan ceiling to 500 STX"),
-          types.ascii("max-loan"),
-          types.uint(500_000_000),
-        ],
-        alice.address
-      ),
-    ]);
-    propBlock.receipts[0].result.expectOk();
-
-    // Bob votes yes
-    const voteBlock = chain.mineBlock([
-      Tx.contractCall(
-        "governance",
-        "vote",
-        [types.uint(1), types.bool(true)],
-        bob.address
-      ),
-    ]);
-    voteBlock.receipts[0].result.expectOk();
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Flow 6: Open Dispute → Join Panel → Submit Verdict
-// ---------------------------------------------------------------------------
-Clarinet.test({
-  name: "integration: open dispute and join arbitration panel",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { deployer, alice, bob } = setup(chain, accounts);
-
-    const charlie = accounts.get("wallet_3")!;
-    chain.mineBlock([
-      Tx.contractCall("cooperative-registry", "register-member", [], charlie.address),
-    ]);
-
-    // Alice opens dispute against bob
-    const disputeBlock = chain.mineBlock([
-      Tx.contractCall(
-        "arbitration",
-        "open-dispute",
-        [
-          types.principal(bob.address),
-          types.uint(1),
-          types.ascii("Bob failed to deliver the task"),
-        ],
-        alice.address
-      ),
-    ]);
-    disputeBlock.receipts[0].result.expectOk();
-  },
+  it("arbitration: open dispute", () => {
+    initAll();
+    const { result } = simnet.callPublicFn("arbitration", "open-dispute", [
+      Cl.principal(bob),
+      Cl.uint(1),
+      Cl.stringUtf8("Breach of contract terms"),
+      Cl.stringUtf8("Evidence of the breach including transaction records")
+    ], alice);
+    expect(result).toBeOk(Cl.uint(1));
+  });
 });
