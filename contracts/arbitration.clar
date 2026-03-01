@@ -189,13 +189,14 @@
     ;; Majority verdict
     (winner    (if (> for-c for-r) (get claimant dispute) (get respondent dispute)))
     (per-arb   (/ (get fee-escrow dispute) (len panel)))
+    (remainder (mod (get fee-escrow dispute) (len panel)))
   )
     (asserts! (not (is-protocol-paused))                  ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status dispute) DISPUTE-VERDICT) ERR-DISPUTE-CLOSED)
-    ;; Pay each panel member their fee share
+    ;; Pay each panel member their fee share (last member receives remainder)
     (try! (as-contract (stx-transfer? per-arb tx-sender (unwrap-panic (element-at panel u0)))))
     (try! (as-contract (stx-transfer? per-arb tx-sender (unwrap-panic (element-at panel u1)))))
-    (try! (as-contract (stx-transfer? per-arb tx-sender (unwrap-panic (element-at panel u2)))))
+    (try! (as-contract (stx-transfer? (+ per-arb remainder) tx-sender (unwrap-panic (element-at panel u2)))))
     ;; Reward arbitrators' trust scores (best-effort)
     (match (as-contract (contract-call? .trust-score reward-endorsement
             (unwrap-panic (element-at panel u0)) u10))
