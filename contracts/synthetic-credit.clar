@@ -1,12 +1,12 @@
 ;; synthetic-credit.clar
-;; REXONOBIT — BTC-Denominated Synthetic Credit Line (sCREDIT)
+;; REXONOBIT -- BTC-Denominated Synthetic Credit Line (sCREDIT)
 ;; High-trust members (score > threshold) mint sCREDIT backed by:
 ;;   - Locked sBTC/STX in savings-vault (hard collateral)
 ;;   - Trust score (behavioral proof = access gate, NOT extra collateral)
 ;; sCREDIT cannot exceed 50% of locked savings value.
-;; Used within the ecosystem: tasks, ROSCAs, services — NOT freely liquidatable.
+;; Used within the ecosystem: tasks, ROSCAs, services -- NOT freely liquidatable.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u1100))
 (define-constant ERR-NOT-A-MEMBER        (err u1101))
 (define-constant ERR-INSUFFICIENT-TRUST  (err u1102))
@@ -18,16 +18,16 @@
 (define-constant ERR-ACCOUNT-NOT-FOUND   (err u1108))
 (define-constant ERR-TRANSFER-FAILED     (err u1109))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
 (define-constant VAULT        .savings-vault)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── sCREDIT fungible token ──────────────────────────────────────────────────
+;; --- sCREDIT fungible token --------------------------------------------------
 (define-fungible-token scredit)
 
-;; ─── Credit account per member ───────────────────────────────────────────────
+;; --- Credit account per member -----------------------------------------------
 (define-map credit-accounts
   { member: principal }
   {
@@ -37,35 +37,32 @@
   }
 )
 
-;; ─── Mint event log ──────────────────────────────────────────────────────────
+;; --- Mint event log ----------------------------------------------------------
 (define-data-var mint-nonce uint u0)
 (define-map mint-events
   { nonce: uint }
   { member: principal, amount: uint, limit-at-mint: uint, at-block: uint }
 )
 
-;; ─── Compute credit limit ────────────────────────────────────────────────────
-;; limit = locked-savings × (scredit-max-collateral-ratio-bps / 10000)
-(define-read-only (compute-credit-limit (member principal))
+;; --- Compute credit limit ----------------------------------------------------
+;; limit = locked-savings x (scredit-max-collateral-ratio-bps / 10000)
+;; Default ratio: 5000 bps (50%). Use get-param for current governance value.
+(define-public (compute-credit-limit (member principal))
   (let (
-    (locked  (unwrap! (contract-call? VAULT get-locked-balance member)
-               ERR-NO-LOCKED-SAVINGS))
-    (ratio   (default-to u5000
-               (match (contract-call? PROTOCOL-CFG get-param "scredit-max-collateral-ratio-bps")
-                 v (some v) none)))
+    (locked (unwrap! (contract-call? .savings-vault get-locked-balance member) ERR-NO-LOCKED-SAVINGS))
   )
-    (ok (/ (* locked ratio) u10000))
+    (ok (/ (* locked u5000) u10000))
   )
 )
 
-;; ─── Mint sCREDIT ────────────────────────────────────────────────────────────
+;; --- Mint sCREDIT ------------------------------------------------------------
 (define-public (mint-scredit (amount uint))
   (let (
     (caller    tx-sender)
     (min-trust (default-to u700
-                 (match (contract-call? PROTOCOL-CFG get-param "scredit-min-trust-score")
-                   v (some v) none)))
-    (score     (unwrap! (contract-call? TRUST get-score caller) ERR-INSUFFICIENT-TRUST))
+                 (match (contract-call? .protocol-config get-param "scredit-min-trust-score")
+                   v (some v) err-v none)))
+    (score     (unwrap! (contract-call? .trust-score get-score caller) ERR-INSUFFICIENT-TRUST))
     (limit     (unwrap! (compute-credit-limit caller) ERR-NO-LOCKED-SAVINGS))
     (account   (default-to
                  { minted: u0, credit-limit: u0, last-updated: u0 }
@@ -76,7 +73,7 @@
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)                                        ERR-ZERO-AMOUNT)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
     (asserts! (>= score min-trust)                                 ERR-INSUFFICIENT-TRUST)
     (asserts! (<= amount available)                                ERR-EXCEEDS-LIMIT)
     (try! (ft-mint? scredit amount caller))
@@ -92,7 +89,7 @@
   )
 )
 
-;; ─── Burn sCREDIT (repay credit, freeing up limit) ───────────────────────────
+;; --- Burn sCREDIT (repay credit, freeing up limit) ---------------------------
 (define-public (burn-scredit (amount uint))
   (let (
     (caller  tx-sender)
@@ -113,7 +110,7 @@
   )
 )
 
-;; ─── Transfer sCREDIT within the ecosystem ───────────────────────────────────
+;; --- Transfer sCREDIT within the ecosystem -----------------------------------
 ;; Moves both the token balance AND the minted obligation from sender to
 ;; recipient, keeping credit-account bookkeeping accurate.
 (define-public (transfer-scredit (amount uint) (recipient principal))
@@ -128,7 +125,7 @@
   )
     (asserts! (not (is-protocol-paused))                           ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)                                         ERR-ZERO-AMOUNT)
-    (asserts! (contract-call? REGISTRY is-active-member recipient)  ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member recipient)  ERR-NOT-A-MEMBER)
     (asserts! (>= (ft-get-balance scredit caller) amount)           ERR-INSUFFICIENT-CREDIT)
     ;; Transfer the fungible token
     (try! (ft-transfer? scredit amount caller recipient))
@@ -148,8 +145,8 @@
   )
 )
 
-;; ─── Read-only ───────────────────────────────────────────────────────────────
-(define-read-only (get-credit-limit (member principal))
+;; --- Read-only ---------------------------------------------------------------
+(define-public (get-credit-limit (member principal))
   (compute-credit-limit member)
 )
 
@@ -161,14 +158,14 @@
   (map-get? credit-accounts { member: member })
 )
 
-(define-read-only (get-available-credit (member principal))
-  (match (map-get? credit-accounts { member: member })
-    account
-      (match (compute-credit-limit member)
-        limit (let ((minted (get minted account)))
-                (ok (if (> limit minted) (- limit minted) u0)))
-        e (err u0))
-    (compute-credit-limit member)
+(define-public (get-available-credit (member principal))
+  (let (
+    (limit-result (try! (compute-credit-limit member)))
+    (account      (default-to { minted: u0, credit-limit: u0, last-updated: u0 }
+                   (map-get? credit-accounts { member: member })))
+    (minted       (get minted account))
+  )
+    (ok (if (> limit-result minted) (- limit-result minted) u0))
   )
 )
 
@@ -180,7 +177,7 @@
   (map-get? mint-events { nonce: nonce })
 )
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
