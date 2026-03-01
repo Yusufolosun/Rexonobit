@@ -2,15 +2,18 @@
 name = "rexonobit"
 authors = []
 telemetry = false
-requirementsFile = "requirements.txt"
 
-[contracts.cooperative-registry]
-path = "contracts/cooperative-registry.clar"
+[[project.requirements]]
+contract_id = "SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait"
+
+# Deploy order: dependencies first
+[contracts.protocol-config]
+path = "contracts/protocol-config.clar"
 clarity_version = 2
 epoch = "2.4"
 
-[contracts.savings-vault]
-path = "contracts/savings-vault.clar"
+[contracts.cooperative-registry]
+path = "contracts/cooperative-registry.clar"
 clarity_version = 2
 epoch = "2.4"
 
@@ -19,13 +22,13 @@ path = "contracts/trust-score.clar"
 clarity_version = 2
 epoch = "2.4"
 
-[contracts.lending-pool]
-path = "contracts/lending-pool.clar"
+[contracts.savings-vault]
+path = "contracts/savings-vault.clar"
 clarity_version = 2
 epoch = "2.4"
 
-[contracts.labor-market]
-path = "contracts/labor-market.clar"
+[contracts.lending-pool]
+path = "contracts/lending-pool.clar"
 clarity_version = 2
 epoch = "2.4"
 
@@ -34,13 +37,8 @@ path = "contracts/treasury.clar"
 clarity_version = 2
 epoch = "2.4"
 
-[contracts.governance]
-path = "contracts/governance.clar"
-clarity_version = 2
-epoch = "2.4"
-
-[contracts.rosca]
-path = "contracts/rosca.clar"
+[contracts.arbitration]
+path = "contracts/arbitration.clar"
 clarity_version = 2
 epoch = "2.4"
 
@@ -49,17 +47,22 @@ path = "contracts/reputation-nft.clar"
 clarity_version = 2
 epoch = "2.4"
 
-[contracts.arbitration]
-path = "contracts/arbitration.clar"
+[contracts.rosca]
+path = "contracts/rosca.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.governance]
+path = "contracts/governance.clar"
+clarity_version = 2
+epoch = "2.4"
+
+[contracts.labor-market]
+path = "contracts/labor-market.clar"
 clarity_version = 2
 epoch = "2.4"
 
 [contracts.synthetic-credit]
 path = "contracts/synthetic-credit.clar"
-clarity_version = 2
-epoch = "2.4"
-
-[contracts.protocol-config]
-path = "contracts/protocol-config.clar"
 clarity_version = 2
 epoch = "2.4"
