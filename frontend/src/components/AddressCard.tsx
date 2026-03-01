@@ -1,6 +1,7 @@
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import { truncateAddress } from "../lib/format";
 
+
 // ---------------------------------------------------------------------------
 // AddressCard — display a Stacks principal with a copy-to-clipboard action
 // ---------------------------------------------------------------------------
