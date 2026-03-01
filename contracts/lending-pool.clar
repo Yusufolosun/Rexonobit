@@ -1,11 +1,11 @@
 ;; lending-pool.clar
-;; REXONOBIT — Circle-Backed Micro Lending
+;; REXONOBIT -- Circle-Backed Micro Lending
 ;; Members borrow from a shared circle pool.
-;; Loan size is capped at trust-score × loan-max-multiplier.
+;; Loan size is capped at trust-score x loan-max-multiplier.
 ;; A fixed contribution fee (not interest) goes back to the circle pool.
 ;; Joint-liability: defaulter + their endorsers score is penalised.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u400))
 (define-constant ERR-NOT-A-MEMBER        (err u401))
 (define-constant ERR-LOAN-NOT-FOUND      (err u402))
@@ -22,18 +22,19 @@
 (define-constant ERR-ZERO-AMOUNT         (err u413))
 (define-constant ERR-CIRCLE-NOT-FOUND    (err u414))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
+(define-constant VAULT        .savings-vault)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── Loan status constants ───────────────────────────────────────────────────
+;; --- Loan status constants ---------------------------------------------------
 (define-constant LOAN-STATUS-PENDING   u1)
 (define-constant LOAN-STATUS-ACTIVE    u2)
 (define-constant LOAN-STATUS-REPAID    u3)
 (define-constant LOAN-STATUS-DEFAULTED u4)
 
-;; ─── Circle lending pools ────────────────────────────────────────────────────
+;; --- Circle lending pools ----------------------------------------------------
 (define-map circle-pools
   { circle-id: uint }
   {
@@ -45,7 +46,7 @@
   }
 )
 
-;; ─── Loan records ────────────────────────────────────────────────────────────
+;; --- Loan records ------------------------------------------------------------
 (define-data-var loan-nonce uint u0)
 (define-map loans
   { loan-id: uint }
@@ -64,13 +65,13 @@
   }
 )
 
-;; ─── Active loan per borrower (one at a time per circle) ─────────────────────
+;; --- Active loan per borrower (one at a time per circle) ---------------------
 (define-map borrower-active-loan
   { borrower: principal, circle-id: uint }
   { loan-id: uint }
 )
 
-;; ─── Depositor pool funding ───────────────────────────────────────────────────
+;; --- Depositor pool funding ---------------------------------------------------
 (define-public (fund-pool (circle-id uint) (amount uint))
   (let (
     (caller tx-sender)
@@ -81,8 +82,8 @@
   )
     (asserts! (not (is-protocol-paused))                         ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)                                      ERR-ZERO-AMOUNT)
-    (asserts! (contract-call? REGISTRY is-active-member caller)  ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)  ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
     (try! (stx-transfer? amount caller (as-contract tx-sender)))
     (map-set circle-pools { circle-id: circle-id }
       (merge pool { balance: (+ (get balance pool) amount) }))
@@ -90,25 +91,25 @@
   )
 )
 
-;; ─── Request a loan ──────────────────────────────────────────────────────────
+;; --- Request a loan ----------------------------------------------------------
 (define-public (request-loan (circle-id uint) (amount uint))
   (let (
     (caller      tx-sender)
     (pool        (unwrap! (map-get? circle-pools { circle-id: circle-id })
                   ERR-CIRCLE-NOT-FOUND))
     (min-trust   (default-to u200
-                   (match (contract-call? PROTOCOL-CFG get-param "loan-min-trust-score")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "loan-min-trust-score")
+                     v (some v) err-v none)))
     (multiplier  (default-to u5
-                   (match (contract-call? PROTOCOL-CFG get-param "loan-max-multiplier")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "loan-max-multiplier")
+                     v (some v) err-v none)))
     (fee-bps     (default-to u200
-                   (match (contract-call? PROTOCOL-CFG get-param "loan-fee-bps")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "loan-fee-bps")
+                     v (some v) err-v none)))
     (repay-win   (default-to u4320
-                   (match (contract-call? PROTOCOL-CFG get-param "loan-repay-window-blocks")
-                     v (some v) none)))
-    (borrower-score (unwrap! (contract-call? TRUST get-score caller)
+                   (match (contract-call? .protocol-config get-param "loan-repay-window-blocks")
+                     v (some v) err-v none)))
+    (borrower-score (unwrap! (contract-call? .trust-score get-score caller)
                       ERR-INSUFFICIENT-TRUST))
     (max-loan    (* borrower-score multiplier))
     (fee         (/ (* amount fee-bps) u10000))
@@ -117,8 +118,8 @@
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)                                       ERR-ZERO-AMOUNT)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
     (asserts! (>= borrower-score min-trust)                        ERR-INSUFFICIENT-TRUST)
     (asserts! (<= amount max-loan)                                 ERR-EXCEEDS-LIMIT)
     (asserts! (>= (get balance pool) amount)                       ERR-POOL-INSUFFICIENT)
@@ -146,7 +147,7 @@
   )
 )
 
-;; ─── Repay loan ──────────────────────────────────────────────────────────────
+;; --- Repay loan --------------------------------------------------------------
 (define-public (repay (loan-id uint) (amount uint))
   (let (
     (caller tx-sender)
@@ -181,8 +182,10 @@
           (begin
             (map-delete borrower-active-loan
               { borrower: caller, circle-id: (get circle-id loan) })
-            (try! (as-contract
-              (contract-call? TRUST reward-loan-repay caller u50)))
+            ;; Reward trust score for full repayment (best-effort)
+            (match (as-contract (contract-call? .trust-score reward-loan-repay caller u50))
+              success true
+              error true)
             (ok true)
           )
           (ok false)
@@ -192,15 +195,15 @@
   )
 )
 
-;; ─── Liquidate defaulter (anyone can call after due-at) ──────────────────────
+;; --- Liquidate defaulter (anyone can call after due-at) ----------------------
 (define-public (liquidate-defaulter (loan-id uint))
   (let (
     (loan  (unwrap! (map-get? loans { loan-id: loan-id }) ERR-LOAN-NOT-FOUND))
     (pool  (unwrap! (map-get? circle-pools { circle-id: (get circle-id loan) })
             ERR-CIRCLE-NOT-FOUND))
     (penalty (default-to u200
-               (match (contract-call? PROTOCOL-CFG get-param "trust-default-penalty")
-                 v (some v) none)))
+               (match (contract-call? .protocol-config get-param "trust-default-penalty")
+                 v (some v) err-v none)))
   )
     (asserts! (not (is-protocol-paused))                      ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status loan) LOAN-STATUS-ACTIVE)     ERR-LOAN-REPAID)
@@ -209,14 +212,15 @@
       (merge loan { status: LOAN-STATUS-DEFAULTED }))
     (map-delete borrower-active-loan
       { borrower: (get borrower loan), circle-id: (get circle-id loan) })
-    ;; Penalise trust score
-    (try! (as-contract
-      (contract-call? TRUST penalize (get borrower loan) penalty "loan-default")))
+    ;; Penalise trust score (best-effort)
+    (match (as-contract (contract-call? .trust-score penalize (get borrower loan) penalty "loan-default"))
+      success true
+      error true)
     (ok true)
   )
 )
 
-;; ─── Read-only helpers ───────────────────────────────────────────────────────
+;; --- Read-only helpers -------------------------------------------------------
 (define-read-only (get-loan (loan-id uint))
   (map-get? loans { loan-id: loan-id })
 )
@@ -243,19 +247,24 @@
   (map-get? borrower-active-loan { borrower: borrower, circle-id: circle-id })
 )
 
-(define-read-only (get-max-loan-amount (borrower principal))
-  (match (contract-call? TRUST get-score borrower)
-    score (let ((multiplier (default-to u5
-                (match (contract-call? PROTOCOL-CFG get-param "loan-max-multiplier")
-                  v (some v) none))))
-      (ok (* score multiplier)))
-    e (err u0)
+(define-public (get-max-loan-amount (borrower principal))
+  (let (
+    (score     (unwrap! (contract-call? .trust-score get-score borrower) (err u0)))
+    (max-bps   (default-to u5000
+                 (match (contract-call? .protocol-config get-param "max-loan-to-savings-bps")
+                   v (some v) err-v none)))
+    (locked    (default-to u0
+                 (match (contract-call? .savings-vault get-locked-balance borrower)
+                   ok-val (some ok-val)
+                   err-val none)))
+  )
+    (ok (/ (* locked max-bps) u10000))
   )
 )
 
 (define-read-only (get-total-loans) (ok (var-get loan-nonce)))
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
