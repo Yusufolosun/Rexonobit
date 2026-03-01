@@ -88,6 +88,33 @@ describe("integration", () => {
     expect(voteResult.result).toBeOk(Cl.uint(20));
   });
 
+  it("governance: execute-proposal requires quorum participation", () => {
+    initAll();
+    // Register a 3rd member so circle has 3 members
+    const charlie = accounts.get("wallet_3")!;
+    simnet.callPublicFn("cooperative-registry", "register-member", [Cl.stringUtf8("Charlie")], charlie);
+    simnet.callPublicFn("cooperative-registry", "request-join", [Cl.uint(1)], charlie);
+    simnet.callPublicFn("trust-score", "initialize-score", [Cl.principal(charlie)], deployer);
+
+    // Create proposal
+    simnet.callPublicFn("governance", "propose", [
+      Cl.uint(1), Cl.uint(4),
+      Cl.stringUtf8("Policy update"),
+      Cl.stringUtf8("Testing quorum enforcement"),
+      Cl.stringAscii(""), Cl.uint(0), Cl.none()
+    ], alice);
+
+    // Only 1 of 3 members votes (33% participation < 51% quorum)
+    simnet.callPublicFn("governance", "vote", [Cl.uint(1), Cl.bool(true)], alice);
+
+    // Mine past vote-until + timelock
+    simnet.mineEmptyBlocks(2000);
+
+    // Execute should fail due to insufficient quorum participation
+    const { result } = simnet.callPublicFn("governance", "execute-proposal", [Cl.uint(1)], alice);
+    expect(result).toBeErr(Cl.uint(707)); // ERR-QUORUM-NOT-MET
+  });
+
   it("arbitration: open dispute", () => {
     initAll();
     const { result } = simnet.callPublicFn("arbitration", "open-dispute", [
