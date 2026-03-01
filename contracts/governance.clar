@@ -17,6 +17,7 @@
 (define-constant ERR-VETO-EXPIRED        (err u709))
 (define-constant ERR-PROTOCOL-PAUSED     (err u710))
 (define-constant ERR-INVALID-TYPE        (err u711))
+(define-constant ERR-INSUFFICIENT-VOTES  (err u712))
 
 ;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
@@ -159,6 +160,9 @@
   (let (
     (proposal   (unwrap! (map-get? proposals { proposal-id: proposal-id })
                  ERR-PROPOSAL-NOT-FOUND))
+    (circle     (unwrap! (contract-call? .cooperative-registry get-circle
+                  (get circle-id proposal))
+                 ERR-NOT-IN-CIRCLE))
     (quorum-bps (default-to u5100
                   (match (contract-call? .protocol-config get-param "governance-quorum-bps")
                     v (some v) err-v none)))
@@ -168,13 +172,18 @@
     (total-w    (get total-weight proposal))
     (yes-w      (get yes-weight proposal))
     (yes-bps    (if (> total-w u0) (/ (* yes-w u10000) total-w) u0))
+    (voter-ct   (get voter-count proposal))
+    (member-ct  (get member-count circle))
+    (participation-bps (if (> member-ct u0) (/ (* voter-ct u10000) member-ct) u0))
     (p-type     (get proposal-type proposal))
   )
     (asserts! (not (is-protocol-paused))                             ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status proposal) STATUS-OPEN)               ERR-PROPOSAL-EXECUTED)
     (asserts! (> block-height (get vote-until proposal))              ERR-VOTE-CLOSED)
     (asserts! (>= block-height (get execute-after proposal))          ERR-TIMELOCK-ACTIVE)
-    (asserts! (>= yes-bps supermaj)                                   ERR-QUORUM-NOT-MET)
+    ;; Enough members must have participated before we trust the vote ratio
+    (asserts! (>= participation-bps quorum-bps)                       ERR-QUORUM-NOT-MET)
+    (asserts! (>= yes-bps supermaj)                                   ERR-INSUFFICIENT-VOTES)
     ;; Dispatch based on proposal type
     (if (is-eq p-type PROPOSAL-PARAM-CHANGE)
       (try! (as-contract
