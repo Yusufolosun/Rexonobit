@@ -119,6 +119,7 @@
                     v (some v) err-v none)))
     (since-last (- block-height (get last-savings-reward entry)))
   )
+    (asserts! (not (is-protocol-paused))        ERR-PROTOCOL-PAUSED)
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (asserts! (> points u0)                    ERR-INVALID-AMOUNT)
     (asserts! (>= since-last cooldown)         ERR-COOLDOWN-ACTIVE)
@@ -143,6 +144,7 @@
                   v (some v) err-v none)))
     (since    (- block-height (get last-loan-reward entry)))
   )
+    (asserts! (not (is-protocol-paused))        ERR-PROTOCOL-PAUSED)
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (asserts! (> points u0)                    ERR-INVALID-AMOUNT)
     (asserts! (>= since cooldown)              ERR-COOLDOWN-ACTIVE)
@@ -167,6 +169,7 @@
                   v (some v) err-v none)))
     (since    (- block-height (get last-endorsement-reward entry)))
   )
+    (asserts! (not (is-protocol-paused))        ERR-PROTOCOL-PAUSED)
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (asserts! (> points u0)                    ERR-INVALID-AMOUNT)
     (asserts! (>= since cooldown)              ERR-COOLDOWN-ACTIVE)
@@ -191,6 +194,7 @@
                   v (some v) err-v none)))
     (since    (- block-height (get last-labor-reward entry)))
   )
+    (asserts! (not (is-protocol-paused))        ERR-PROTOCOL-PAUSED)
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (asserts! (> points u0)                    ERR-INVALID-AMOUNT)
     (asserts! (>= since cooldown)              ERR-COOLDOWN-ACTIVE)
@@ -209,6 +213,7 @@
 ;; --- Penalize: loan default, task fraud, etc. --------------------------------
 (define-public (penalize (member principal) (points uint) (reason (string-ascii 32)))
   (let ((entry (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND)))
+    (asserts! (not (is-protocol-paused))        ERR-PROTOCOL-PAUSED)
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (asserts! (> points u0)                    ERR-INVALID-AMOUNT)
     (let ((new-score (sub-from-score (get score entry) points)))
@@ -226,6 +231,7 @@
 ;; --- Full reset on severe default --------------------------------------------
 (define-public (reset-on-default (member principal))
   (let ((entry (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND)))
+    (asserts! (not (is-protocol-paused))        ERR-PROTOCOL-PAUSED)
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
     (map-set trust-scores { member: member }
       (merge entry
