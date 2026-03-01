@@ -1,10 +1,10 @@
 ;; arbitration.clar
-;; REXONOBIT — Decentralized Dispute Resolution
+;; REXONOBIT -- Decentralized Dispute Resolution
 ;; A panel of 3 randomly selected high-trust members from OTHER circles adjudicates.
 ;; Their decision is binding; they earn a fee.
-;; Arbitrators' trust scores are at stake — ruling inconsistently risks penalty.
+;; Arbitrators' trust scores are at stake -- ruling inconsistently risks penalty.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u1000))
 (define-constant ERR-NOT-A-MEMBER        (err u1001))
 (define-constant ERR-DISPUTE-NOT-FOUND   (err u1002))
@@ -19,23 +19,23 @@
 (define-constant ERR-SAME-CIRCLE         (err u1011))
 (define-constant ERR-INSUFFICIENT-TRUST  (err u1012))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── Dispute status ──────────────────────────────────────────────────────────
+;; --- Dispute status ----------------------------------------------------------
 (define-constant DISPUTE-OPEN        u1)
 (define-constant DISPUTE-PANEL-SET   u2)
 (define-constant DISPUTE-VERDICT     u3)
 (define-constant DISPUTE-CLOSED      u4)
 
-;; ─── Verdict constants ───────────────────────────────────────────────────────
+;; --- Verdict constants -------------------------------------------------------
 (define-constant VERDICT-FAVOR-CLAIMANT  u1)
 (define-constant VERDICT-FAVOR-RESPONDENT u2)
 (define-constant VERDICT-SPLIT           u3)
 
-;; ─── Dispute records ─────────────────────────────────────────────────────────
+;; --- Dispute records ---------------------------------------------------------
 (define-data-var dispute-nonce uint u0)
 
 (define-map disputes
@@ -58,13 +58,13 @@
   }
 )
 
-;; ─── Arbitrator vote records ─────────────────────────────────────────────────
+;; --- Arbitrator vote records -------------------------------------------------
 (define-map arbitrator-votes
   { dispute-id: uint, arbitrator: principal }
   { verdict: uint, reasoning: (string-utf8 256), at-block: uint }
 )
 
-;; ─── Open a dispute ──────────────────────────────────────────────────────────
+;; --- Open a dispute ----------------------------------------------------------
 (define-public (open-dispute
     (respondent  principal)
     (circle-id   uint)
@@ -74,12 +74,12 @@
     (caller     tx-sender)
     (dispute-id (+ (var-get dispute-nonce) u1))
     (arb-fee    (default-to u500000
-                  (match (contract-call? PROTOCOL-CFG get-param "arbitration-fee-ustx")
-                    v (some v) none)))
+                  (match (contract-call? .protocol-config get-param "arbitration-fee-ustx")
+                    v (some v) err-v none)))
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-active-member respondent) ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member respondent) ERR-NOT-A-MEMBER)
     (asserts! (> arb-fee u0)                                       ERR-ZERO-AMOUNT)
     ;; Claimant deposits fee
     (try! (stx-transfer? arb-fee caller (as-contract tx-sender)))
@@ -97,24 +97,24 @@
   )
 )
 
-;; ─── Assign arbitrator to panel (called by eligible members from other circles) ─
+;; --- Assign arbitrator to panel (called by eligible members from other circles) -
 (define-public (join-panel (dispute-id uint))
   (let (
     (caller  tx-sender)
     (dispute (unwrap! (map-get? disputes { dispute-id: dispute-id })
                ERR-DISPUTE-NOT-FOUND))
     (min-trust (default-to u500
-                 (match (contract-call? PROTOCOL-CFG get-param "arbitration-min-trust-score")
-                   v (some v) none)))
-    (arb-score (unwrap! (contract-call? TRUST get-score caller) ERR-INSUFFICIENT-TRUST))
+                 (match (contract-call? .protocol-config get-param "arbitration-min-trust-score")
+                   v (some v) err-v none)))
+    (arb-score (unwrap! (contract-call? .trust-score get-score caller) ERR-INSUFFICIENT-TRUST))
     (panel     (get panel dispute))
   )
     (asserts! (not (is-protocol-paused))                           ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status dispute) DISPUTE-OPEN)             ERR-DISPUTE-CLOSED)
-    (asserts! (contract-call? REGISTRY is-active-member caller)    ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)    ERR-NOT-A-MEMBER)
     (asserts! (>= arb-score min-trust)                              ERR-INSUFFICIENT-TRUST)
     ;; Must not be from the same circle as disputants
-    (asserts! (not (contract-call? REGISTRY is-circle-member
+    (asserts! (not (contract-call? .cooperative-registry is-circle-member
                     (get circle-id dispute) caller))                ERR-SAME-CIRCLE)
     ;; Must not be claimant or respondent
     (asserts! (not (is-eq caller (get claimant dispute)))           ERR-NOT-AUTHORIZED)
@@ -133,7 +133,7 @@
   )
 )
 
-;; ─── Submit arbitrator verdict ───────────────────────────────────────────────
+;; --- Submit arbitrator verdict -----------------------------------------------
 (define-public (submit-verdict
     (dispute-id uint)
     (verdict    uint)
@@ -175,14 +175,14 @@
   )
 )
 
-;; ─── Close dispute and disburse fee + ruling ─────────────────────────────────
+;; --- Close dispute and disburse fee + ruling ---------------------------------
 (define-public (close-dispute (dispute-id uint))
   (let (
     (dispute   (unwrap! (map-get? disputes { dispute-id: dispute-id })
                 ERR-DISPUTE-NOT-FOUND))
     (arb-fee   (default-to u500000
-                 (match (contract-call? PROTOCOL-CFG get-param "arbitration-fee-ustx")
-                   v (some v) none)))
+                 (match (contract-call? .protocol-config get-param "arbitration-fee-ustx")
+                   v (some v) err-v none)))
     (for-c     (get votes-for-claimant dispute))
     (for-r     (get votes-for-respondent dispute))
     (panel     (get panel dispute))
@@ -196,13 +196,16 @@
     (try! (as-contract (stx-transfer? per-arb tx-sender (unwrap-panic (element-at panel u0)))))
     (try! (as-contract (stx-transfer? per-arb tx-sender (unwrap-panic (element-at panel u1)))))
     (try! (as-contract (stx-transfer? per-arb tx-sender (unwrap-panic (element-at panel u2)))))
-    ;; Reward arbitrators' trust scores
-    (try! (as-contract (contract-call? TRUST reward-endorsement
-            (unwrap-panic (element-at panel u0)) u10)))
-    (try! (as-contract (contract-call? TRUST reward-endorsement
-            (unwrap-panic (element-at panel u1)) u10)))
-    (try! (as-contract (contract-call? TRUST reward-endorsement
-            (unwrap-panic (element-at panel u2)) u10)))
+    ;; Reward arbitrators' trust scores (best-effort)
+    (match (as-contract (contract-call? .trust-score reward-endorsement
+            (unwrap-panic (element-at panel u0)) u10))
+      success true error true)
+    (match (as-contract (contract-call? .trust-score reward-endorsement
+            (unwrap-panic (element-at panel u1)) u10))
+      success true error true)
+    (match (as-contract (contract-call? .trust-score reward-endorsement
+            (unwrap-panic (element-at panel u2)) u10))
+      success true error true)
     (map-set disputes { dispute-id: dispute-id }
       (merge dispute
         { status: DISPUTE-CLOSED,
@@ -212,7 +215,7 @@
   )
 )
 
-;; ─── Read-only ───────────────────────────────────────────────────────────────
+;; --- Read-only ---------------------------------------------------------------
 (define-read-only (get-dispute (id uint))
   (map-get? disputes { dispute-id: id })
 )
@@ -223,7 +226,7 @@
 
 (define-read-only (get-total-disputes) (ok (var-get dispute-nonce)))
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
