@@ -1,13 +1,13 @@
 ;; reputation-nft.clar
-;; REXONOBIT — Soulbound Achievement NFTs
+;; REXONOBIT -- Soulbound Achievement NFTs
 ;; Non-transferable NFTs minted to members upon protocol milestones.
 ;; Badges: first-loan-repaid, savings-streak-6m, 10-tasks-done, circle-founder.
-;; transfer is intentionally blocked — soulbound to original minter.
+;; transfer is intentionally blocked -- soulbound to original minter.
 
-;; ─── SIP-009 NFT trait (partial, soulbound override) ────────────────────────
+;; --- SIP-009 NFT trait (partial, soulbound override) ------------------------
 (impl-trait 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait.nft-trait)
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u900))
 (define-constant ERR-NOT-A-MEMBER        (err u901))
 (define-constant ERR-BADGE-NOT-FOUND     (err u902))
@@ -17,17 +17,17 @@
 (define-constant ERR-PROTOCOL-PAUSED     (err u906))
 (define-constant ERR-UNAUTHORIZED-MINTER (err u907))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── NFT definition ──────────────────────────────────────────────────────────
+;; --- NFT definition ----------------------------------------------------------
 (define-non-fungible-token rexonobit-badge uint)
 
-;; ─── Token IDs ───────────────────────────────────────────────────────────────
+;; --- Token IDs ---------------------------------------------------------------
 (define-data-var last-token-id uint u0)
 
-;; ─── Badge type constants ────────────────────────────────────────────────────
+;; --- Badge type constants ----------------------------------------------------
 (define-constant BADGE-FIRST-LOAN-REPAID    u1)
 (define-constant BADGE-SAVINGS-STREAK-6M    u2)
 (define-constant BADGE-10-TASKS-DONE        u3)
@@ -36,7 +36,7 @@
 (define-constant BADGE-DISPUTE-ARBITRATOR   u6)
 (define-constant BADGE-COOPERATIVE-VETERAN  u7)  ;; 1 year active
 
-;; ─── Token metadata ──────────────────────────────────────────────────────────
+;; --- Token metadata ----------------------------------------------------------
 (define-map token-metadata
   { token-id: uint }
   {
@@ -47,41 +47,41 @@
   }
 )
 
-;; ─── Member badge index (one badge per type per member) ──────────────────────
+;; --- Member badge index (one badge per type per member) ----------------------
 (define-map member-badges
   { member: principal, badge-type: uint }
   { token-id: uint }
 )
 
-;; ─── Authorized minter contracts ────────────────────────────────────────────
+;; --- Authorized minter contracts --------------------------------------------
 (define-map authorized-minters { minter: principal } { enabled: bool })
 (define-data-var admin principal tx-sender)
 
-;; ─── SIP-009: get-last-token-id ──────────────────────────────────────────────
+;; --- SIP-009: get-last-token-id ----------------------------------------------
 (define-read-only (get-last-token-id)
   (ok (var-get last-token-id))
 )
 
-;; ─── SIP-009: get-token-uri ──────────────────────────────────────────────────
+;; --- SIP-009: get-token-uri --------------------------------------------------
 (define-read-only (get-token-uri (token-id uint))
   (match (map-get? token-metadata { token-id: token-id })
     meta (ok (some (concat "https://rexonobit.xyz/badges/"
-                    (concat (int-to-ascii (get badge-type meta)) ".json"))))
+                    (concat (badge-id-to-string (get badge-type meta)) ".json"))))
     (ok none)
   )
 )
 
-;; ─── SIP-009: get-owner ──────────────────────────────────────────────────────
+;; --- SIP-009: get-owner ------------------------------------------------------
 (define-read-only (get-owner (token-id uint))
   (ok (nft-get-owner? rexonobit-badge token-id))
 )
 
-;; ─── SIP-009: transfer — BLOCKED (soulbound) ─────────────────────────────────
+;; --- SIP-009: transfer -- BLOCKED (soulbound) ---------------------------------
 (define-public (transfer (token-id uint) (sender principal) (recipient principal))
   ERR-TRANSFER-BLOCKED
 )
 
-;; ─── Mint a badge ────────────────────────────────────────────────────────────
+;; --- Mint a badge ------------------------------------------------------------
 (define-public (mint-badge (member principal) (badge-type uint))
   (let (
     (caller   tx-sender)
@@ -90,7 +90,7 @@
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (or (is-authorized-minter caller)
                   (is-eq caller (var-get admin)))                  ERR-UNAUTHORIZED-MINTER)
-    (asserts! (contract-call? REGISTRY is-active-member member)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member member)   ERR-NOT-A-MEMBER)
     (asserts! (is-none (map-get? member-badges
                 { member: member, badge-type: badge-type }))       ERR-ALREADY-HAS-BADGE)
     (try! (nft-mint? rexonobit-badge token-id member))
@@ -104,7 +104,7 @@
   )
 )
 
-;; ─── Burn a badge (penalty — protocol admin or authorized contract) ───────────
+;; --- Burn a badge (penalty -- protocol admin or authorized contract) -----------
 (define-public (burn-badge (token-id uint))
   (let (
     (caller tx-sender)
@@ -121,7 +121,7 @@
   )
 )
 
-;; ─── Authorize / deauthorize minter ─────────────────────────────────────────
+;; --- Authorize / deauthorize minter -----------------------------------------
 (define-public (set-authorized-minter (minter principal) (enabled bool))
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) ERR-NOT-AUTHORIZED)
@@ -130,7 +130,7 @@
   )
 )
 
-;; ─── Read-only helpers ───────────────────────────────────────────────────────
+;; --- Read-only helpers -------------------------------------------------------
 (define-read-only (get-token-metadata (token-id uint))
   (map-get? token-metadata { token-id: token-id })
 )
@@ -150,12 +150,12 @@
   )
 )
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
 
-(define-private (int-to-ascii (n uint))
+(define-private (badge-id-to-string (n uint))
   (if (is-eq n u1) "1"
   (if (is-eq n u2) "2"
   (if (is-eq n u3) "3"
