@@ -56,4 +56,27 @@ describe("trust-score", () => {
       expect(result).toBeOk(Cl.uint(200)); // seed 100 + 50 + 50
     });
   });
+
+  describe("protocol-pause guard", () => {
+    it("reward-savings is blocked when protocol is paused", () => {
+      setupMemberWithTrust();
+      simnet.callPublicFn("protocol-config", "emergency-pause", [], deployer);
+      const { result } = simnet.callPublicFn("trust-score", "reward-savings", [Cl.principal(alice), Cl.uint(10)], deployer);
+      expect(result).toBeErr(Cl.uint(305)); // ERR-PROTOCOL-PAUSED
+    });
+
+    it("penalize is blocked when protocol is paused", () => {
+      setupMemberWithTrust();
+      simnet.callPublicFn("protocol-config", "emergency-pause", [], deployer);
+      const { result } = simnet.callPublicFn("trust-score", "penalize", [Cl.principal(alice), Cl.uint(10), Cl.stringAscii("test")], deployer);
+      expect(result).toBeErr(Cl.uint(305)); // ERR-PROTOCOL-PAUSED
+    });
+
+    it("reset-on-default is blocked when protocol is paused", () => {
+      setupMemberWithTrust();
+      simnet.callPublicFn("protocol-config", "emergency-pause", [], deployer);
+      const { result } = simnet.callPublicFn("trust-score", "reset-on-default", [Cl.principal(alice)], deployer);
+      expect(result).toBeErr(Cl.uint(305)); // ERR-PROTOCOL-PAUSED
+    });
+  });
 });
