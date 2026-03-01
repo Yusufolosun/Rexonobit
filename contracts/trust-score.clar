@@ -1,10 +1,10 @@
 ;; trust-score.clar
-;; REXONOBIT — On-Chain Credit Reputation
+;; REXONOBIT -- On-Chain Credit Reputation
 ;; Non-transferable, soulbound credit score derived from:
 ;;   savings consistency, loan repayment, circle endorsements, labor completion.
 ;; Every input has cooldown guards to prevent gaming.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u300))
 (define-constant ERR-NOT-A-MEMBER        (err u301))
 (define-constant ERR-SCORE-NOT-FOUND     (err u302))
@@ -13,15 +13,15 @@
 (define-constant ERR-PROTOCOL-PAUSED     (err u305))
 (define-constant ERR-UNAUTHORIZED-CALLER (err u306))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY      .cooperative-registry)
 (define-constant PROTOCOL-CFG  .protocol-config)
 
-;; ─── Authorized caller contracts ─────────────────────────────────────────────
+;; --- Authorized caller contracts ---------------------------------------------
 ;; Only these contracts may write to trust scores.
 (define-map authorized-writers { writer: principal } { enabled: bool })
 
-;; ─── Score record ────────────────────────────────────────────────────────────
+;; --- Score record ------------------------------------------------------------
 (define-map trust-scores
   { member: principal }
   {
@@ -40,7 +40,7 @@
   }
 )
 
-;; ─── Score change audit log ──────────────────────────────────────────────────
+;; --- Score change audit log --------------------------------------------------
 (define-data-var score-event-nonce uint u0)
 (define-map score-events
   { nonce: uint }
@@ -53,16 +53,16 @@
   }
 )
 
-;; ─── Admin ───────────────────────────────────────────────────────────────────
+;; --- Admin -------------------------------------------------------------------
 (define-data-var admin principal tx-sender)
 
-;; ─── Initialize a member's trust profile ────────────────────────────────────
+;; --- Initialize a member's trust profile ------------------------------------
 (define-public (initialize-score (member principal))
   (let ((seed (default-to u100
-          (match (contract-call? PROTOCOL-CFG get-param "trust-seed-score")
-            v (some v) none))))
+          (match (contract-call? .protocol-config get-param "trust-seed-score")
+            v (some v) err-v none))))
     (asserts! (not (is-protocol-paused)) ERR-PROTOCOL-PAUSED)
-    (asserts! (contract-call? REGISTRY is-active-member member) ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member member) ERR-NOT-A-MEMBER)
     (asserts! (is-none (map-get? trust-scores { member: member })) ERR-NOT-AUTHORIZED)
     (map-set trust-scores { member: member }
       { score: seed,
@@ -81,19 +81,19 @@
   )
 )
 
-;; ─── Internal: safe-add capped at max-score ──────────────────────────────────
+;; --- Internal: safe-add capped at max-score ----------------------------------
 (define-private (add-to-score (current uint) (delta uint) (max-score uint))
   (let ((new-val (+ current delta)))
     (if (> new-val max-score) max-score new-val)
   )
 )
 
-;; ─── Internal: safe-sub floored at 0 ────────────────────────────────────────
+;; --- Internal: safe-sub floored at 0 ----------------------------------------
 (define-private (sub-from-score (current uint) (delta uint))
   (if (>= current delta) (- current delta) u0)
 )
 
-;; ─── Internal: record event ──────────────────────────────────────────────────
+;; --- Internal: record event --------------------------------------------------
 (define-private (record-event (member principal) (delta int) (reason (string-ascii 32)))
   (let ((n (+ (var-get score-event-nonce) u1)))
     (map-set score-events { nonce: n }
@@ -103,20 +103,20 @@
   )
 )
 
-;; ─── Internal: max-score helper ──────────────────────────────────────────────
+;; --- Internal: max-score helper ----------------------------------------------
 (define-private (get-max-score)
   (default-to u1000
-    (match (contract-call? PROTOCOL-CFG get-param "trust-max-score")
-      v (some v) none))
+    (match (contract-call? .protocol-config get-param "trust-max-score")
+      v (some v) err-v none))
 )
 
-;; ─── Reward: savings deposit ─────────────────────────────────────────────────
+;; --- Reward: savings deposit -------------------------------------------------
 (define-public (reward-savings (member principal) (points uint))
   (let (
     (entry      (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND))
     (cooldown   (default-to u144
-                  (match (contract-call? PROTOCOL-CFG get-param "savings-reward-cooldown-blocks")
-                    v (some v) none)))
+                  (match (contract-call? .protocol-config get-param "savings-reward-cooldown-blocks")
+                    v (some v) err-v none)))
     (since-last (- block-height (get last-savings-reward entry)))
   )
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
@@ -134,13 +134,13 @@
   )
 )
 
-;; ─── Reward: loan repayment ──────────────────────────────────────────────────
+;; --- Reward: loan repayment --------------------------------------------------
 (define-public (reward-loan-repay (member principal) (points uint))
   (let (
     (entry    (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND))
     (cooldown (default-to u144
-                (match (contract-call? PROTOCOL-CFG get-param "loan-reward-cooldown-blocks")
-                  v (some v) none)))
+                (match (contract-call? .protocol-config get-param "loan-reward-cooldown-blocks")
+                  v (some v) err-v none)))
     (since    (- block-height (get last-loan-reward entry)))
   )
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
@@ -158,13 +158,13 @@
   )
 )
 
-;; ─── Reward: circle endorsement ──────────────────────────────────────────────
+;; --- Reward: circle endorsement ----------------------------------------------
 (define-public (reward-endorsement (member principal) (points uint))
   (let (
     (entry    (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND))
     (cooldown (default-to u1008
-                (match (contract-call? PROTOCOL-CFG get-param "endorsement-cooldown-blocks")
-                  v (some v) none)))
+                (match (contract-call? .protocol-config get-param "endorsement-cooldown-blocks")
+                  v (some v) err-v none)))
     (since    (- block-height (get last-endorsement-reward entry)))
   )
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
@@ -182,13 +182,13 @@
   )
 )
 
-;; ─── Reward: labor task completion ───────────────────────────────────────────
+;; --- Reward: labor task completion -------------------------------------------
 (define-public (reward-labor (member principal) (points uint))
   (let (
     (entry    (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND))
     (cooldown (default-to u144
-                (match (contract-call? PROTOCOL-CFG get-param "labor-reward-cooldown-blocks")
-                  v (some v) none)))
+                (match (contract-call? .protocol-config get-param "labor-reward-cooldown-blocks")
+                  v (some v) err-v none)))
     (since    (- block-height (get last-labor-reward entry)))
   )
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
@@ -206,7 +206,7 @@
   )
 )
 
-;; ─── Penalize: loan default, task fraud, etc. ────────────────────────────────
+;; --- Penalize: loan default, task fraud, etc. --------------------------------
 (define-public (penalize (member principal) (points uint) (reason (string-ascii 32)))
   (let ((entry (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND)))
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
@@ -223,7 +223,7 @@
   )
 )
 
-;; ─── Full reset on severe default ────────────────────────────────────────────
+;; --- Full reset on severe default --------------------------------------------
 (define-public (reset-on-default (member principal))
   (let ((entry (unwrap! (map-get? trust-scores { member: member }) ERR-SCORE-NOT-FOUND)))
     (asserts! (is-authorized-writer tx-sender) ERR-UNAUTHORIZED-CALLER)
@@ -236,7 +236,7 @@
   )
 )
 
-;; ─── Authorize / deauthorize a writer contract ───────────────────────────────
+;; --- Authorize / deauthorize a writer contract -------------------------------
 (define-public (set-authorized-writer (writer principal) (enabled bool))
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) ERR-NOT-AUTHORIZED)
@@ -252,7 +252,7 @@
   )
 )
 
-;; ─── Read-only ───────────────────────────────────────────────────────────────
+;; --- Read-only ---------------------------------------------------------------
 (define-read-only (get-score (member principal))
   (match (map-get? trust-scores { member: member })
     entry (ok (get score entry))
@@ -286,10 +286,7 @@
   (ok (var-get score-event-nonce))
 )
 
-;; ─── Internal: paused flag ───────────────────────────────────────────────────
+;; --- Internal: paused flag ---------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused)
-    v v
-    false
-  )
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
