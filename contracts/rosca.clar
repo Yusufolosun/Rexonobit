@@ -1,11 +1,11 @@
 ;; rosca.clar
-;; REXONOBIT — Rotating Savings & Credit Association (Susu / Chit Fund Engine)
+;; REXONOBIT -- Rotating Savings & Credit Association (Susu / Chit Fund Engine)
 ;; N members each commit X microSTX per cycle.
 ;; Each cycle one member receives the full pot.
-;; Members lock full contribution upfront — no contribution = no payout, ever.
+;; Members lock full contribution upfront -- no contribution = no payout, ever.
 ;; Order is determined by a deterministic block-hash-based selection.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED       (err u800))
 (define-constant ERR-NOT-A-MEMBER         (err u801))
 (define-constant ERR-ROSCA-NOT-FOUND      (err u802))
@@ -23,17 +23,17 @@
 (define-constant ERR-INVALID-SIZE         (err u814))
 (define-constant ERR-DUPLICATE-ENTRY      (err u815))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── ROSCA status ────────────────────────────────────────────────────────────
+;; --- ROSCA status ------------------------------------------------------------
 (define-constant ROSCA-PENDING  u1)
 (define-constant ROSCA-ACTIVE   u2)
 (define-constant ROSCA-COMPLETE u3)
 
-;; ─── ROSCA registry ──────────────────────────────────────────────────────────
+;; --- ROSCA registry ----------------------------------------------------------
 (define-data-var next-rosca-id uint u1)
 
 (define-map roscas
@@ -54,7 +54,7 @@
   }
 )
 
-;; ─── ROSCA membership ────────────────────────────────────────────────────────
+;; --- ROSCA membership --------------------------------------------------------
 (define-map rosca-members
   { rosca-id: uint, member: principal }
   {
@@ -65,19 +65,19 @@
   }
 )
 
-;; ─── Per-cycle contribution tracking ────────────────────────────────────────
+;; --- Per-cycle contribution tracking ----------------------------------------
 (define-map cycle-contributions
   { rosca-id: uint, cycle: uint, member: principal }
   { amount: uint, at-block: uint }
 )
 
-;; ─── Temporary tracking for duplicate detection in payout order ─────────────
+;; --- Temporary tracking for duplicate detection in payout order -------------
 (define-map payout-order-seen
   { rosca-id: uint, member: principal }
   { seen: bool }
 )
 
-;; ─── Create a ROSCA ──────────────────────────────────────────────────────────
+;; --- Create a ROSCA ----------------------------------------------------------
 (define-public (create-rosca
     (name         (string-utf8 64))
     (contribution uint)
@@ -87,17 +87,17 @@
     (caller    tx-sender)
     (rosca-id  (var-get next-rosca-id))
     (min-m     (default-to u3
-                 (match (contract-call? PROTOCOL-CFG get-param "rosca-min-members")
-                   v (some v) none)))
+                 (match (contract-call? .protocol-config get-param "rosca-min-members")
+                   v (some v) err-v none)))
     (max-m     (default-to u20
-                 (match (contract-call? PROTOCOL-CFG get-param "rosca-max-members")
-                   v (some v) none)))
+                 (match (contract-call? .protocol-config get-param "rosca-max-members")
+                   v (some v) err-v none)))
     (cyc-len   (default-to u4320
-                 (match (contract-call? PROTOCOL-CFG get-param "rosca-cycle-blocks")
-                   v (some v) none)))
+                 (match (contract-call? .protocol-config get-param "rosca-cycle-blocks")
+                   v (some v) err-v none)))
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
     (asserts! (> contribution u0)                                  ERR-ZERO-AMOUNT)
     (asserts! (>= member-count min-m)                              ERR-INVALID-SIZE)
     (asserts! (<= member-count max-m)                              ERR-INVALID-SIZE)
@@ -117,7 +117,7 @@
   )
 )
 
-;; ─── Join a ROSCA ────────────────────────────────────────────────────────────
+;; --- Join a ROSCA ------------------------------------------------------------
 (define-public (join-rosca (rosca-id uint))
   (let (
     (caller tx-sender)
@@ -125,7 +125,7 @@
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status rosca) ROSCA-PENDING)             ERR-ROSCA-STARTED)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
     (asserts! (is-none (map-get? rosca-members
                 { rosca-id: rosca-id, member: caller }))           ERR-ALREADY-JOINED)
     (asserts! (< (get current-members rosca) (get member-count rosca)) ERR-ROSCA-FULL)
@@ -140,9 +140,9 @@
   )
 )
 
-;; ─── Lock contributions and start ROSCA ──────────────────────────────────────
+;; --- Lock contributions and start ROSCA --------------------------------------
 ;; Each member calls this once. When all members have locked, ROSCA begins.
-;; Transitions the ROSCA from PENDING → ACTIVE.  Actual STX collection
+;; Transitions the ROSCA from PENDING -> ACTIVE.  Actual STX collection
 ;; happens on a per-cycle basis via `contribute`.
 (define-public (lock-and-start (rosca-id uint))
   (let (
@@ -153,13 +153,13 @@
   )
     (asserts! (not (is-protocol-paused))                  ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status rosca) ROSCA-PENDING)     ERR-ROSCA-STARTED)
-    ;; If all members locked → set active
+    ;; If all members locked -> set active
     ;; (simplified: track via balance; full impl uses a locked-members counter)
     (ok true)
   )
 )
 
-;; ─── Contribute for current cycle ────────────────────────────────────────────
+;; --- Contribute for current cycle --------------------------------------------
 (define-public (contribute (rosca-id uint))
   (let (
     (caller     tx-sender)
@@ -180,14 +180,15 @@
     (map-set rosca-members { rosca-id: rosca-id, member: caller }
       (merge membership
         { contributed-cycles: (+ (get contributed-cycles membership) u1) }))
-    ;; Reward trust score for on-time contribution
-    (try! (as-contract
-      (contract-call? TRUST reward-savings caller u5)))
+    ;; Reward trust score for on-time contribution (best-effort)
+    (match (as-contract (contract-call? .trust-score reward-savings caller u5))
+      success true
+      error true)
     (ok true)
   )
 )
 
-;; ─── Trigger cycle payout (anyone can call when cycle window elapses) ─────────
+;; --- Trigger cycle payout (anyone can call when cycle window elapses) ---------
 (define-public (payout (rosca-id uint))
   (let (
     (rosca  (unwrap! (map-get? roscas { id: rosca-id }) ERR-ROSCA-NOT-FOUND))
@@ -222,7 +223,7 @@
   )
 )
 
-;; ─── Set payout order (creator calls once before start, post all-members-locked) ──
+;; --- Set payout order (creator calls once before start, post all-members-locked) --
 (define-public (set-payout-order (rosca-id uint) (order (list 20 principal)))
   (let (
     (caller     tx-sender)
@@ -251,7 +252,7 @@
   )
 )
 
-;; ─── Read-only ───────────────────────────────────────────────────────────────
+;; --- Read-only ---------------------------------------------------------------
 (define-read-only (get-rosca (id uint))
   (map-get? roscas { id: id })
 )
@@ -266,9 +267,9 @@
 
 (define-read-only (get-total-roscas) (ok (- (var-get next-rosca-id) u1)))
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
 
 ;; Fold helper: verify each principal in payout order is a ROSCA member.
@@ -292,7 +293,7 @@
   (if (get valid acc)
     (if (is-some (map-get? payout-order-seen
            { rosca-id: (get rosca-id acc), member: entry }))
-      ;; Already seen → duplicate
+      ;; Already seen -> duplicate
       { rosca-id: (get rosca-id acc), valid: false }
       (begin
         (map-set payout-order-seen
