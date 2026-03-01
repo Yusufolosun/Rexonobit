@@ -66,6 +66,8 @@ export default function TaskBoard() {
   const taskId = useFormField("", (v) => validatePositiveInt(v, "Task ID"));
   const bidMsg = useFormField("", (v) => v.trim() ? { valid: true, error: null } : { valid: false, error: "Bid message is required" });
   const workerAddr = useFormField("", validatePrincipal);
+  const disputeReason = useFormField("", (v) => v.trim() ? { valid: true, error: null } : { valid: false, error: "Dispute reason is required" });
+  const disputeEvidence = useFormField("", (v) => v.trim() ? { valid: true, error: null } : { valid: false, error: "Evidence is required" });
 
   const refresh = useCallback(async () => {
     if (!address) return;
@@ -169,6 +171,14 @@ export default function TaskBoard() {
             <label>Worker Address (for accept-bid)</label>
             <input value={workerAddr.value} onChange={workerAddr.onChange} onBlur={workerAddr.onBlur} placeholder="ST1PQHQ…" />
           </div>
+          <div className="form-group">
+            <label>Dispute Reason</label>
+            <input value={disputeReason.value} onChange={disputeReason.onChange} onBlur={disputeReason.onBlur} placeholder="Breach of contract terms" />
+          </div>
+          <div className="form-group">
+            <label>Dispute Evidence</label>
+            <input value={disputeEvidence.value} onChange={disputeEvidence.onChange} onBlur={disputeEvidence.onBlur} placeholder="Links, screenshots, etc." />
+          </div>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <button className="btn-secondary" aria-busy={txPending} aria-label="Bid on task" disabled={txPending || !taskId.value || !bidMsg.value}
@@ -191,8 +201,8 @@ export default function TaskBoard() {
             onClick={() => handle(() => attestTask(parseInt(taskId.value), false), "Attest rejected")}>
             Reject
           </button>
-          <button className="btn-secondary" aria-busy={txPending} aria-label="Open dispute on task" disabled={txPending || !taskId.value}
-            onClick={() => handle(() => disputeTask(parseInt(taskId.value)), "Dispute opened")}>
+          <button className="btn-secondary" aria-busy={txPending} aria-label="Open dispute on task" disabled={txPending || !taskId.value || !disputeReason.value || !disputeEvidence.value}
+            onClick={() => handle(() => disputeTask(parseInt(taskId.value), disputeReason.value, disputeEvidence.value), "Dispute opened")}>
             Open Dispute
           </button>
           <button className="btn-secondary" aria-busy={txPending} aria-label="Cancel task" disabled={txPending || !taskId.value}
