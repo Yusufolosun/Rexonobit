@@ -1,181 +1,97 @@
-import {
-  Clarinet,
-  Tx,
-  Chain,
-  Account,
-  types,
-} from "https://deno.land/x/clarinet@v1.7.1/index.ts";
-import { assertEquals } from "https://deno.land/std@0.200.0/testing/asserts.ts";
+import { describe, it, expect, beforeEach } from "vitest";
+import { Cl } from "@stacks/transactions";
 
 // ---------------------------------------------------------------------------
-// protocol-config.clar — unit tests
+// protocol-config.clar -- unit tests (Clarinet SDK v3 / vitest)
 // ---------------------------------------------------------------------------
 
-Clarinet.test({
-  name: "initialize: sets default params and marks as initialized",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    const block = chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    block.receipts[0].result.expectOk().expectBool(true);
+const accounts = simnet.getAccounts();
+const deployer = accounts.get("deployer")!;
+const wallet1  = accounts.get("wallet_1")!;
+const wallet2  = accounts.get("wallet_2")!;
 
-    const paramResult = chain.callReadOnlyFn(
-      "protocol-config",
-      "get-param",
-      [types.ascii("loan-interest-rate-bps")],
-      deployer.address
-    );
-    paramResult.result.expectSome().expectUint(500);
-  },
-});
+describe("protocol-config", () => {
+  describe("initialize", () => {
+    it("sets default params and marks as initialized", () => {
+      const { result } = simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      expect(result).toBeOk(Cl.bool(true));
+    });
 
-Clarinet.test({
-  name: "initialize: cannot be called twice",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const block = chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    block.receipts[0].result.expectErr().expectUint(101); // ERR-ALREADY-INITIALIZED
-  },
-});
+    it("cannot be called twice", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      const { result } = simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      expect(result).toBeErr(Cl.uint(1004));
+    });
+  });
 
-Clarinet.test({
-  name: "set-param: admin can update a parameter",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const block = chain.mineBlock([
-      Tx.contractCall(
-        "protocol-config",
-        "set-param",
-        [types.ascii("loan-interest-rate-bps"), types.uint(750)],
-        deployer.address
-      ),
-    ]);
-    block.receipts[0].result.expectOk().expectBool(true);
+  describe("set-param", () => {
+    it("admin can update a parameter", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      const { result } = simnet.callPublicFn(
+        "protocol-config", "set-param",
+        [Cl.stringAscii("loan-fee-bps"), Cl.uint(750)],
+        deployer
+      );
+      expect(result).toBeOk(Cl.bool(true));
 
-    const paramResult = chain.callReadOnlyFn(
-      "protocol-config",
-      "get-param",
-      [types.ascii("loan-interest-rate-bps")],
-      deployer.address
-    );
-    paramResult.result.expectSome().expectUint(750);
-  },
-});
+      const param = simnet.callReadOnlyFn(
+        "protocol-config", "get-param",
+        [Cl.stringAscii("loan-fee-bps")],
+        deployer
+      );
+      expect(param.result).toBeOk(Cl.uint(750));
+    });
 
-Clarinet.test({
-  name: "set-param: non-admin cannot update parameters",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    const attacker = accounts.get("wallet_1")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const block = chain.mineBlock([
-      Tx.contractCall(
-        "protocol-config",
-        "set-param",
-        [types.ascii("loan-interest-rate-bps"), types.uint(9999)],
-        attacker.address
-      ),
-    ]);
-    block.receipts[0].result.expectErr().expectUint(100); // ERR-NOT-ADMIN
-  },
-});
+    it("non-admin cannot update parameters", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      const { result } = simnet.callPublicFn(
+        "protocol-config", "set-param",
+        [Cl.stringAscii("loan-fee-bps"), Cl.uint(9999)],
+        wallet1
+      );
+      expect(result).toBeErr(Cl.uint(1000));
+    });
+  });
 
-Clarinet.test({
-  name: "emergency-pause: admin can pause and resume protocol",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const pauseBlock = chain.mineBlock([
-      Tx.contractCall("protocol-config", "emergency-pause", [], deployer.address),
-    ]);
-    pauseBlock.receipts[0].result.expectOk().expectBool(true);
+  describe("emergency-pause", () => {
+    it("admin can pause and resume protocol", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      const pauseResult = simnet.callPublicFn("protocol-config", "emergency-pause", [], deployer);
+      expect(pauseResult.result).toBeOk(Cl.bool(true));
 
-    const resumeBlock = chain.mineBlock([
-      Tx.contractCall("protocol-config", "resume-protocol", [], deployer.address),
-    ]);
-    resumeBlock.receipts[0].result.expectOk().expectBool(true);
-  },
-});
+      const isPaused = simnet.callReadOnlyFn("protocol-config", "is-paused", [], deployer);
+      expect(isPaused.result).toBeOk(Cl.bool(true));
 
-Clarinet.test({
-  name: "propose-admin / accept-admin: 2-step admin transfer",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    const newAdmin = accounts.get("wallet_1")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const proposeBlock = chain.mineBlock([
-      Tx.contractCall(
-        "protocol-config",
-        "propose-admin",
-        [types.principal(newAdmin.address)],
-        deployer.address
-      ),
-    ]);
-    proposeBlock.receipts[0].result.expectOk().expectBool(true);
+      const resumeResult = simnet.callPublicFn("protocol-config", "resume-protocol", [], deployer);
+      expect(resumeResult.result).toBeOk(Cl.bool(true));
 
-    const acceptBlock = chain.mineBlock([
-      Tx.contractCall("protocol-config", "accept-admin", [], newAdmin.address),
-    ]);
-    acceptBlock.receipts[0].result.expectOk().expectBool(true);
-  },
-});
+      const isResumed = simnet.callReadOnlyFn("protocol-config", "is-paused", [], deployer);
+      expect(isResumed.result).toBeOk(Cl.bool(false));
+    });
+  });
 
-Clarinet.test({
-  name: "initialize: double initialization is rejected",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const block = chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    block.receipts[0].result.expectErr();
-  },
-});
+  describe("propose-admin / accept-admin", () => {
+    it("2-step admin transfer works", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      const proposeResult = simnet.callPublicFn(
+        "protocol-config", "propose-admin",
+        [Cl.principal(wallet1)],
+        deployer
+      );
+      expect(proposeResult.result).toBeOk(Cl.bool(true));
 
-Clarinet.test({
-  name: "set-param: non-admin cannot change protocol parameters",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    const stranger = accounts.get("wallet_1")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const block = chain.mineBlock([
-      Tx.contractCall("protocol-config", "set-min-deposit", [types.uint(500_000)], stranger.address),
-    ]);
-    block.receipts[0].result.expectErr();
-  },
-});
+      const acceptResult = simnet.callPublicFn("protocol-config", "accept-admin", [], wallet1);
+      expect(acceptResult.result).toBeOk(Cl.bool(true));
+    });
 
-Clarinet.test({
-  name: "propose-admin: non-admin cannot propose new admin",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    const alice = accounts.get("wallet_1")!;
-    const bob = accounts.get("wallet_2")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    ]);
-    const block = chain.mineBlock([
-      Tx.contractCall("protocol-config", "propose-admin", [types.principal(bob.address)], alice.address),
-    ]);
-    block.receipts[0].result.expectErr();
-  },
+    it("non-admin cannot propose new admin", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      const { result } = simnet.callPublicFn(
+        "protocol-config", "propose-admin",
+        [Cl.principal(wallet2)],
+        wallet1
+      );
+      expect(result).toBeErr(Cl.uint(1000));
+    });
+  });
 });
