@@ -1,10 +1,10 @@
 ;; savings-vault.clar
-;; REXONOBIT — Bitcoin Savings Core
+;; REXONOBIT -- Bitcoin Savings Core
 ;; Members deposit sBTC (or STX as parallel track) into personal vaults.
 ;; Tracks streaks, deposit history, commitment locks.
 ;; Locked savings earn trust-score points via trust-score contract.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u200))
 (define-constant ERR-NOT-A-MEMBER        (err u201))
 (define-constant ERR-VAULT-NOT-FOUND     (err u202))
@@ -17,16 +17,16 @@
 (define-constant ERR-ALREADY-INITIALIZED (err u209))
 (define-constant ERR-LOCK-SHORTENING    (err u210))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── Savings streak constants ────────────────────────────────────────────────
+;; --- Savings streak constants ------------------------------------------------
 ;; Deposit within this many blocks of last deposit = streak continues (~7 days)
 (define-constant STREAK-WINDOW-BLOCKS u1008)
 
-;; ─── Vault record ────────────────────────────────────────────────────────────
+;; --- Vault record ------------------------------------------------------------
 (define-map vaults
   { owner: principal }
   {
@@ -42,7 +42,7 @@
   }
 )
 
-;; ─── Deposit history ─────────────────────────────────────────────────────────
+;; --- Deposit history ---------------------------------------------------------
 (define-data-var deposit-nonce uint u0)
 (define-map deposit-history
   { nonce: uint }
@@ -55,7 +55,7 @@
   }
 )
 
-;; ─── Withdrawal history ──────────────────────────────────────────────────────
+;; --- Withdrawal history ------------------------------------------------------
 (define-data-var withdrawal-nonce uint u0)
 (define-map withdrawal-history
   { nonce: uint }
@@ -66,11 +66,11 @@
   }
 )
 
-;; ─── Initialize vault ────────────────────────────────────────────────────────
+;; --- Initialize vault --------------------------------------------------------
 (define-public (initialize-vault)
   (let ((caller tx-sender))
     (asserts! (not (is-protocol-paused))                        ERR-PROTOCOL-PAUSED)
-    (asserts! (contract-call? REGISTRY is-active-member caller) ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller) ERR-NOT-A-MEMBER)
     (asserts! (is-none (map-get? vaults { owner: caller }))     ERR-ALREADY-INITIALIZED)
     (map-set vaults { owner: caller }
       { balance: u0, locked-balance: u0, lock-until: u0,
@@ -80,14 +80,14 @@
   )
 )
 
-;; ─── Deposit (free / unlocked) ───────────────────────────────────────────────
+;; --- Deposit (free / unlocked) -----------------------------------------------
 (define-public (deposit (amount uint))
   (let (
     (caller  tx-sender)
     (vault   (unwrap! (map-get? vaults { owner: caller }) ERR-VAULT-NOT-FOUND))
     (min-dep (default-to u1000000
-               (match (contract-call? PROTOCOL-CFG get-param "min-deposit-ustx")
-                 v (some v) none)))
+               (match (contract-call? .protocol-config get-param "min-deposit-ustx")
+                 v (some v) err-v none)))
   )
     (asserts! (not (is-protocol-paused)) ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)              ERR-ZERO-AMOUNT)
@@ -113,25 +113,26 @@
         { owner: caller, amount: amount, locked: false,
           lock-until: u0, at-block: block-height })
       (var-set deposit-nonce dn)
-      ;; Reward trust score for deposit
-      (try! (as-contract
-        (contract-call? TRUST reward-savings caller u10)))
+      ;; Reward trust score for deposit (best-effort; cooldown or missing score must not block deposit)
+      (match (as-contract (contract-call? .trust-score reward-savings caller u10))
+        success true
+        error true)
       (ok new-balance)
     )
   )
 )
 
-;; ─── Lock savings (time-locked deposit) ──────────────────────────────────────
+;; --- Lock savings (time-locked deposit) --------------------------------------
 (define-public (lock-savings (amount uint) (lock-blocks uint))
   (let (
     (caller   tx-sender)
     (vault    (unwrap! (map-get? vaults { owner: caller }) ERR-VAULT-NOT-FOUND))
     (min-lock (default-to u144
-                (match (contract-call? PROTOCOL-CFG get-param "savings-lock-min-blocks")
-                  v (some v) none)))
+                (match (contract-call? .protocol-config get-param "savings-lock-min-blocks")
+                  v (some v) err-v none)))
     (min-dep  (default-to u1000000
-                (match (contract-call? PROTOCOL-CFG get-param "min-deposit-ustx")
-                  v (some v) none)))
+                (match (contract-call? .protocol-config get-param "min-deposit-ustx")
+                  v (some v) err-v none)))
   )
     (asserts! (not (is-protocol-paused)) ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)              ERR-ZERO-AMOUNT)
@@ -164,14 +165,16 @@
         { owner: caller, amount: amount, locked: true,
           lock-until: unlock-at, at-block: block-height })
       (var-set deposit-nonce dn)
-      (try! (as-contract
-        (contract-call? TRUST reward-savings caller points)))
+      ;; Reward trust score for locking (best-effort)
+      (match (as-contract (contract-call? .trust-score reward-savings caller points))
+        success true
+        error true)
       (ok unlock-at)
     )
   )
 )
 
-;; ─── Withdraw unlocked balance ───────────────────────────────────────────────
+;; --- Withdraw unlocked balance -----------------------------------------------
 (define-public (withdraw (amount uint))
   (let (
     (caller tx-sender)
@@ -197,7 +200,7 @@
   )
 )
 
-;; ─── Withdraw locked balance (only after lock expires) ───────────────────────
+;; --- Withdraw locked balance (only after lock expires) -----------------------
 (define-public (withdraw-locked (amount uint))
   (let (
     (caller tx-sender)
@@ -222,7 +225,7 @@
   )
 )
 
-;; ─── Internal: compute deposit streak ───────────────────────────────────────
+;; --- Internal: compute deposit streak ---------------------------------------
 (define-private (compute-streak (last-deposit uint) (current-streak uint))
   (if (is-eq last-deposit u0)
     u1
@@ -233,7 +236,7 @@
   )
 )
 
-;; ─── Read-only helpers ───────────────────────────────────────────────────────
+;; --- Read-only helpers -------------------------------------------------------
 (define-read-only (get-vault (owner principal))
   (map-get? vaults { owner: owner })
 )
@@ -284,9 +287,7 @@
 (define-read-only (get-total-deposits)  (ok (var-get deposit-nonce)))
 (define-read-only (get-total-withdrawals) (ok (var-get withdrawal-nonce)))
 
-;; ─── Internal: paused flag ───────────────────────────────────────────────────
+;; --- Internal: paused flag ---------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused)
-    v v false
-  )
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
