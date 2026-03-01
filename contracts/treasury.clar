@@ -1,10 +1,10 @@
 ;; treasury.clar
-;; REXONOBIT — Circle Treasury
+;; REXONOBIT -- Circle Treasury
 ;; Shared treasury per circle fed by: loan fees, unclaimed bounties, protocol fees,
 ;; voluntary contributions.
-;; Governed by circle members — large spends require 67% supermajority + timelock.
+;; Governed by circle members -- large spends require 67% supermajority + timelock.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u600))
 (define-constant ERR-NOT-A-MEMBER        (err u601))
 (define-constant ERR-PROPOSAL-NOT-FOUND  (err u602))
@@ -20,11 +20,11 @@
 (define-constant ERR-CIRCLE-NOT-FOUND    (err u612))
 (define-constant ERR-QUORUM-NOT-MET      (err u613))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── Treasury balances (per circle) ─────────────────────────────────────────
+;; --- Treasury balances (per circle) -----------------------------------------
 (define-map treasury-balances
   { circle-id: uint }
   {
@@ -35,7 +35,7 @@
   }
 )
 
-;; ─── Spend proposals ─────────────────────────────────────────────────────────
+;; --- Spend proposals ---------------------------------------------------------
 (define-data-var proposal-nonce uint u0)
 
 (define-map proposals
@@ -57,13 +57,13 @@
   }
 )
 
-;; ─── Vote tracking ───────────────────────────────────────────────────────────
+;; --- Vote tracking -----------------------------------------------------------
 (define-map proposal-votes
   { proposal-id: uint, voter: principal }
   { vote: bool, at-block: uint }
 )
 
-;; ─── Deposit to a circle treasury ────────────────────────────────────────────
+;; --- Deposit to a circle treasury --------------------------------------------
 (define-public (deposit-to-treasury (circle-id uint) (amount uint))
   (let (
     (caller  tx-sender)
@@ -73,7 +73,7 @@
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)                                        ERR-ZERO-AMOUNT)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
     (try! (stx-transfer? amount caller (as-contract tx-sender)))
     (map-set treasury-balances { circle-id: circle-id }
       (merge current
@@ -83,7 +83,7 @@
   )
 )
 
-;; ─── Internal deposit (called by other contracts) ────────────────────────────
+;; --- Internal deposit (called by other contracts) ----------------------------
 (define-public (internal-deposit (circle-id uint) (amount uint))
   (let (
     (current (default-to
@@ -100,7 +100,7 @@
   )
 )
 
-;; ─── Propose a spend ─────────────────────────────────────────────────────────
+;; --- Propose a spend ---------------------------------------------------------
 (define-public (propose-spend
     (circle-id   uint)
     (recipient   principal)
@@ -112,19 +112,19 @@
                   ERR-CIRCLE-NOT-FOUND))
     (proposal-id (+ (var-get proposal-nonce) u1))
     (vote-blocks (default-to u1440
-                   (match (contract-call? PROTOCOL-CFG get-param "governance-vote-blocks")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "governance-vote-blocks")
+                     v (some v) err-v none)))
     (timelock    (default-to u288
-                   (match (contract-call? PROTOCOL-CFG get-param "governance-timelock-blocks")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "governance-timelock-blocks")
+                     v (some v) err-v none)))
     (large-thr   (default-to u10000000
-                   (match (contract-call? PROTOCOL-CFG get-param "treasury-large-spend-threshold")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "treasury-large-spend-threshold")
+                     v (some v) err-v none)))
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (> amount u0)                                        ERR-ZERO-AMOUNT)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
     (asserts! (<= amount (get balance treasury))                   ERR-INSUFFICIENT-FUNDS)
     (map-set proposals { proposal-id: proposal-id }
       { circle-id: circle-id, proposer: caller, recipient: recipient,
@@ -142,7 +142,7 @@
   )
 )
 
-;; ─── Vote on a proposal ──────────────────────────────────────────────────────
+;; --- Vote on a proposal ------------------------------------------------------
 (define-public (vote (proposal-id uint) (approve bool))
   (let (
     (caller   tx-sender)
@@ -152,8 +152,8 @@
     (asserts! (not (is-protocol-paused))             ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status proposal) u1)        ERR-VOTE-CLOSED)
     (asserts! (<= block-height (get vote-until proposal)) ERR-VOTE-CLOSED)
-    (asserts! (contract-call? REGISTRY is-active-member caller) ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-circle-member
+    (asserts! (contract-call? .cooperative-registry is-active-member caller) ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-circle-member
                 (get circle-id proposal) caller)      ERR-NOT-IN-CIRCLE)
     (asserts! (is-none (map-get? proposal-votes
                 { proposal-id: proposal-id, voter: caller }))    ERR-ALREADY-VOTED)
@@ -168,7 +168,7 @@
   )
 )
 
-;; ─── Execute a proposal (after timelock, if supermajority passed) ─────────────
+;; --- Execute a proposal (after timelock, if supermajority passed) -------------
 (define-public (execute-spend (proposal-id uint))
   (let (
     (proposal  (unwrap! (map-get? proposals { proposal-id: proposal-id })
@@ -176,15 +176,15 @@
     (treasury  (unwrap! (map-get? treasury-balances
                   { circle-id: (get circle-id proposal) })
                 ERR-CIRCLE-NOT-FOUND))
-    (circle    (unwrap! (contract-call? REGISTRY get-circle (get circle-id proposal))
+    (circle    (unwrap! (contract-call? .cooperative-registry get-circle (get circle-id proposal))
                 ERR-CIRCLE-NOT-FOUND))
     (supermaj  (default-to u6700
-                 (match (contract-call? PROTOCOL-CFG get-param "governance-supermajority-bps")
-                   v (some v) none)))
+                 (match (contract-call? .protocol-config get-param "governance-supermajority-bps")
+                   v (some v) err-v none)))
     ;; Quorum: at least 50 % of circle members must have voted (default)
     (quorum-bps (default-to u5000
-                  (match (contract-call? PROTOCOL-CFG get-param "treasury-quorum-bps")
-                    v (some v) none)))
+                  (match (contract-call? .protocol-config get-param "treasury-quorum-bps")
+                    v (some v) err-v none)))
     (total-v   (get total-voters proposal))
     (yes-v     (get yes-votes proposal))
     (member-ct (get member-count circle))
@@ -214,7 +214,7 @@
   )
 )
 
-;; ─── Read-only ───────────────────────────────────────────────────────────────
+;; --- Read-only ---------------------------------------------------------------
 (define-read-only (get-treasury-balance (circle-id uint))
   (match (map-get? treasury-balances { circle-id: circle-id })
     t (ok (get balance t))
@@ -236,7 +236,7 @@
 
 (define-read-only (get-total-proposals) (ok (var-get proposal-nonce)))
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
