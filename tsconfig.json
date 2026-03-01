@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "vitest-env.d.ts",
+    "vitest.config.ts",
+    "tests/**/*.ts",
+    "tests/**/*.d.ts"
+  ],
+  "exclude": ["frontend", "node_modules", "tests/legacy", "tests/legacy/**", "tests/legacy/**/*"]
+}
