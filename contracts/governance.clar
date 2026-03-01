@@ -1,10 +1,10 @@
 ;; governance.clar
-;; REXONOBIT — Circle-Level Democratic Governance
+;; REXONOBIT -- Circle-Level Democratic Governance
 ;; Voting weight = trust score (soulbound, not token balance).
 ;; Any single member's weight is capped at 20% of total circle weight.
 ;; Proposals: loan policy changes, task rates, member expulsion, treasury spends.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED      (err u700))
 (define-constant ERR-NOT-A-MEMBER        (err u701))
 (define-constant ERR-PROPOSAL-NOT-FOUND  (err u702))
@@ -18,25 +18,25 @@
 (define-constant ERR-PROTOCOL-PAUSED     (err u710))
 (define-constant ERR-INVALID-TYPE        (err u711))
 
-;; ─── Contract references ─────────────────────────────────────────────────────
+;; --- Contract references -----------------------------------------------------
 (define-constant REGISTRY     .cooperative-registry)
 (define-constant TRUST        .trust-score)
 (define-constant PROTOCOL-CFG .protocol-config)
 
-;; ─── Proposal types ──────────────────────────────────────────────────────────
+;; --- Proposal types ----------------------------------------------------------
 (define-constant PROPOSAL-PARAM-CHANGE   u1)
 (define-constant PROPOSAL-EXPEL-MEMBER   u2)
 (define-constant PROPOSAL-TREASURY-SPEND u3)
 (define-constant PROPOSAL-POLICY-UPDATE  u4)
 
-;; ─── Proposal status ─────────────────────────────────────────────────────────
+;; --- Proposal status ---------------------------------------------------------
 (define-constant STATUS-OPEN     u1)
 (define-constant STATUS-APPROVED u2)
 (define-constant STATUS-REJECTED u3)
 (define-constant STATUS-EXECUTED u4)
 (define-constant STATUS-VETOED   u5)
 
-;; ─── Proposal store ──────────────────────────────────────────────────────────
+;; --- Proposal store ----------------------------------------------------------
 (define-data-var proposal-nonce uint u0)
 
 (define-map proposals
@@ -62,13 +62,13 @@
   }
 )
 
-;; ─── Vote records ────────────────────────────────────────────────────────────
+;; --- Vote records ------------------------------------------------------------
 (define-map gov-votes
   { proposal-id: uint, voter: principal }
   { weight: uint, approve: bool, at-block: uint }
 )
 
-;; ─── Create proposal ─────────────────────────────────────────────────────────
+;; --- Create proposal ---------------------------------------------------------
 (define-public (propose
     (circle-id uint)
     (proposal-type uint)
@@ -81,15 +81,15 @@
     (caller      tx-sender)
     (proposal-id (+ (var-get proposal-nonce) u1))
     (vote-blocks (default-to u1440
-                   (match (contract-call? PROTOCOL-CFG get-param "governance-vote-blocks")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "governance-vote-blocks")
+                     v (some v) err-v none)))
     (timelock    (default-to u288
-                   (match (contract-call? PROTOCOL-CFG get-param "governance-timelock-blocks")
-                     v (some v) none)))
+                   (match (contract-call? .protocol-config get-param "governance-timelock-blocks")
+                     v (some v) err-v none)))
   )
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-circle-member circle-id caller) ERR-NOT-IN-CIRCLE)
     (asserts! (or (is-eq proposal-type PROPOSAL-PARAM-CHANGE)
                   (or (is-eq proposal-type PROPOSAL-EXPEL-MEMBER)
                       (or (is-eq proposal-type PROPOSAL-TREASURY-SPEND)
@@ -112,16 +112,16 @@
   )
 )
 
-;; ─── Vote (weight = trust score, capped at 20% of new total) ─────────────────
+;; --- Vote (weight = trust score, capped at 20% of new total) -----------------
 (define-public (vote (proposal-id uint) (approve bool))
   (let (
     (caller   tx-sender)
     (proposal (unwrap! (map-get? proposals { proposal-id: proposal-id })
                ERR-PROPOSAL-NOT-FOUND))
-    (raw-score (unwrap! (contract-call? TRUST get-score caller) ERR-NOT-A-MEMBER))
+    (raw-score (unwrap! (contract-call? .trust-score get-score caller) ERR-NOT-A-MEMBER))
     (max-weight-bps (default-to u2000
-                     (match (contract-call? PROTOCOL-CFG get-param "governance-max-vote-weight-bps")
-                       v (some v) none)))
+                     (match (contract-call? .protocol-config get-param "governance-max-vote-weight-bps")
+                       v (some v) err-v none)))
     ;; Cap weight at max-weight-bps of the projected total (existing + this vote)
     (total-so-far   (get total-weight proposal))
     (projected-total (+ total-so-far raw-score))
@@ -133,8 +133,8 @@
     (asserts! (not (is-protocol-paused))                          ERR-PROTOCOL-PAUSED)
     (asserts! (is-eq (get status proposal) STATUS-OPEN)            ERR-VOTE-CLOSED)
     (asserts! (<= block-height (get vote-until proposal))          ERR-VOTE-CLOSED)
-    (asserts! (contract-call? REGISTRY is-active-member caller)   ERR-NOT-A-MEMBER)
-    (asserts! (contract-call? REGISTRY is-circle-member
+    (asserts! (contract-call? .cooperative-registry is-active-member caller)   ERR-NOT-A-MEMBER)
+    (asserts! (contract-call? .cooperative-registry is-circle-member
                 (get circle-id proposal) caller)                   ERR-NOT-IN-CIRCLE)
     (asserts! (is-none (map-get? gov-votes
                 { proposal-id: proposal-id, voter: caller }))      ERR-ALREADY-VOTED)
@@ -154,17 +154,17 @@
   )
 )
 
-;; ─── Execute proposal (after vote closes + timelock, if quorum + supermajority) ──
+;; --- Execute proposal (after vote closes + timelock, if quorum + supermajority) --
 (define-public (execute-proposal (proposal-id uint))
   (let (
     (proposal   (unwrap! (map-get? proposals { proposal-id: proposal-id })
                  ERR-PROPOSAL-NOT-FOUND))
     (quorum-bps (default-to u5100
-                  (match (contract-call? PROTOCOL-CFG get-param "governance-quorum-bps")
-                    v (some v) none)))
+                  (match (contract-call? .protocol-config get-param "governance-quorum-bps")
+                    v (some v) err-v none)))
     (supermaj   (default-to u6700
-                  (match (contract-call? PROTOCOL-CFG get-param "governance-supermajority-bps")
-                    v (some v) none)))
+                  (match (contract-call? .protocol-config get-param "governance-supermajority-bps")
+                    v (some v) err-v none)))
     (total-w    (get total-weight proposal))
     (yes-w      (get yes-weight proposal))
     (yes-bps    (if (> total-w u0) (/ (* yes-w u10000) total-w) u0))
@@ -178,11 +178,11 @@
     ;; Dispatch based on proposal type
     (if (is-eq p-type PROPOSAL-PARAM-CHANGE)
       (try! (as-contract
-        (contract-call? PROTOCOL-CFG set-param
+        (contract-call? .protocol-config set-param
           (get param-key proposal) (get param-value proposal))))
       (if (is-eq p-type PROPOSAL-EXPEL-MEMBER)
         (try! (as-contract
-          (contract-call? REGISTRY expel-member
+          (contract-call? .cooperative-registry expel-member
             (get circle-id proposal)
             (unwrap! (get target proposal) ERR-NOT-AUTHORIZED))))
         ;; PROPOSAL-TREASURY-SPEND and PROPOSAL-POLICY-UPDATE
@@ -196,7 +196,7 @@
   )
 )
 
-;; ─── Veto (proposer can cancel before vote closes) ───────────────────────────
+;; --- Veto (proposer can cancel before vote closes) ---------------------------
 (define-public (veto (proposal-id uint))
   (let (
     (caller   tx-sender)
@@ -212,7 +212,7 @@
   )
 )
 
-;; ─── Read-only ───────────────────────────────────────────────────────────────
+;; --- Read-only ---------------------------------------------------------------
 (define-read-only (get-proposal (proposal-id uint))
   (map-get? proposals { proposal-id: proposal-id })
 )
@@ -223,7 +223,7 @@
 
 (define-read-only (get-total-proposals) (ok (var-get proposal-nonce)))
 
-;; ─── Internal ────────────────────────────────────────────────────────────────
+;; --- Internal ----------------------------------------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CFG is-paused) v v false)
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
