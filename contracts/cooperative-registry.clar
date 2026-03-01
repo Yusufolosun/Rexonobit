@@ -1,9 +1,9 @@
 ;; cooperative-registry.clar
-;; REXONOBIT — Membership Engine
+;; REXONOBIT -- Membership Engine
 ;; Manages member onboarding, cooperative circles (5-50 people),
 ;; social vouching (2-of-N endorsement), and member status lifecycle.
 
-;; ─── Error codes ─────────────────────────────────────────────────────────────
+;; --- Error codes -------------------------------------------------------------
 (define-constant ERR-NOT-AUTHORIZED       (err u100))
 (define-constant ERR-ALREADY-MEMBER       (err u101))
 (define-constant ERR-NOT-A-MEMBER         (err u102))
@@ -22,22 +22,22 @@
 (define-constant ERR-CIRCLE-INACTIVE      (err u115))
 (define-constant ERR-NOT-SUSPENDED        (err u116))
 
-;; ─── Protocol config reference ───────────────────────────────────────────────
+;; --- Protocol config reference -----------------------------------------------
 (define-constant PROTOCOL-CONFIG .protocol-config)
 (define-constant GOVERNANCE      .governance)
 
-;; ─── Member status values ────────────────────────────────────────────────────
+;; --- Member status values ----------------------------------------------------
 (define-constant STATUS-ACTIVE    u1)
 (define-constant STATUS-SUSPENDED u2)
 (define-constant STATUS-EXPELLED  u3)
 (define-constant STATUS-PENDING   u4)
 
-;; ─── Global counters ─────────────────────────────────────────────────────────
+;; --- Global counters ---------------------------------------------------------
 (define-data-var next-circle-id    uint u1)
 (define-data-var total-members     uint u0)
 (define-data-var total-circles     uint u0)
 
-;; ─── Member registry ─────────────────────────────────────────────────────────
+;; --- Member registry ---------------------------------------------------------
 (define-map members
   { address: principal }
   {
@@ -49,7 +49,7 @@
   }
 )
 
-;; ─── Circle registry ─────────────────────────────────────────────────────────
+;; --- Circle registry ---------------------------------------------------------
 (define-map circles
   { id: uint }
   {
@@ -64,25 +64,25 @@
   }
 )
 
-;; ─── Circle membership ───────────────────────────────────────────────────────
+;; --- Circle membership -------------------------------------------------------
 (define-map circle-members
   { circle-id: uint, member: principal }
   { joined-at: uint, role: uint }   ;; role: 1=member 2=admin
 )
 
-;; ─── Pending join requests ───────────────────────────────────────────────────
+;; --- Pending join requests ---------------------------------------------------
 (define-map pending-joins
   { circle-id: uint, applicant: principal }
   { requested-at: uint, vouch-count: uint }
 )
 
-;; ─── Vouch tracking (prevents double-vouch) ──────────────────────────────────
+;; --- Vouch tracking (prevents double-vouch) ----------------------------------
 (define-map vouches
   { circle-id: uint, applicant: principal, voucher: principal }
   { at-block: uint }
 )
 
-;; ─── Register as a global protocol member ────────────────────────────────────
+;; --- Register as a global protocol member ------------------------------------
 (define-public (register-member (display-name (string-utf8 64)))
   (let ((caller tx-sender))
     (asserts! (not (is-protocol-paused))          ERR-PROTOCOL-PAUSED)
@@ -99,7 +99,7 @@
   )
 )
 
-;; ─── Create a circle ─────────────────────────────────────────────────────────
+;; --- Create a circle ---------------------------------------------------------
 (define-public (create-circle
     (name        (string-utf8 64))
     (description (string-utf8 256))
@@ -135,7 +135,7 @@
   )
 )
 
-;; ─── Request to join a circle (goes to pending if not open) ──────────────────
+;; --- Request to join a circle (goes to pending if not open) ------------------
 (define-public (request-join (circle-id uint))
   (let (
     (caller  tx-sender)
@@ -149,12 +149,12 @@
     (asserts! (is-none (map-get? pending-joins { circle-id: circle-id, applicant: caller }))
               ERR-ALREADY-IN-CIRCLE)
     (let ((max-members (default-to u50
-            (match (contract-call? PROTOCOL-CONFIG get-param "circle-max-members")
-              v (some v) none))))
+            (match (contract-call? .protocol-config get-param "circle-max-members")
+              v (some v) err-v none))))
       (asserts! (< (get member-count circle) max-members) ERR-CIRCLE-FULL)
     )
     (if (get is-open circle)
-      ;; Open circle — join directly
+      ;; Open circle -- join directly
       (begin
         (map-set circle-members { circle-id: circle-id, member: caller }
           { joined-at: block-height, role: u1 })
@@ -166,7 +166,7 @@
                 (unwrap-panic (map-get? members { address: caller }))) u1) }))
         (ok true)
       )
-      ;; Closed circle — create pending application
+      ;; Closed circle -- create pending application
       (begin
         (map-set pending-joins { circle-id: circle-id, applicant: caller }
           { requested-at: block-height, vouch-count: u0 })
@@ -176,7 +176,7 @@
   )
 )
 
-;; ─── Vouch for a pending applicant ───────────────────────────────────────────
+;; --- Vouch for a pending applicant -------------------------------------------
 (define-public (vouch-for (circle-id uint) (applicant principal))
   (let (
     (caller  tx-sender)
@@ -202,13 +202,13 @@
     (let (
       (new-count (+ (get vouch-count pending) u1))
       (required  (default-to u2
-          (match (contract-call? PROTOCOL-CONFIG get-param "endorsement-required-count")
-            v (some v) none)))
+          (match (contract-call? .protocol-config get-param "endorsement-required-count")
+            v (some v) err-v none)))
     )
       (map-set pending-joins { circle-id: circle-id, applicant: applicant }
         (merge pending { vouch-count: new-count }))
       (if (>= new-count required)
-        ;; Threshold reached — finalize join
+        ;; Threshold reached -- finalize join
         (begin
           (map-set circle-members { circle-id: circle-id, member: applicant }
             { joined-at: block-height, role: u1 })
@@ -227,7 +227,7 @@
   )
 )
 
-;; ─── Expel a member (circle admin or governance contract) ────────────────────
+;; --- Expel a member (circle admin or governance contract) --------------------
 (define-public (expel-member (circle-id uint) (target principal))
   (let (
     (caller      tx-sender)
@@ -246,7 +246,7 @@
     (map-set circles { id: circle-id }
       (merge circle { member-count: (- (get member-count circle) u1) }))
     ;; Decrement the member's circle count but keep their global status
-    ;; untouched — expulsion is circle-scoped.  Protocol-wide bans go
+    ;; untouched -- expulsion is circle-scoped.  Protocol-wide bans go
     ;; through suspend-member instead.
     (match (map-get? members { address: target })
       m (map-set members { address: target }
@@ -259,11 +259,11 @@
   )
 )
 
-;; ─── Suspend a member globally (protocol admin) ──────────────────────────────
+;; --- Suspend a member globally (protocol admin) ------------------------------
 (define-public (suspend-member (target principal))
   (begin
     (asserts! (is-eq tx-sender
-      (unwrap! (contract-call? PROTOCOL-CONFIG get-admin) ERR-NOT-AUTHORIZED))
+      (unwrap! (contract-call? .protocol-config get-admin) ERR-NOT-AUTHORIZED))
       ERR-NOT-AUTHORIZED)
     (match (map-get? members { address: target })
       m (begin
@@ -274,11 +274,11 @@
   )
 )
 
-;; ─── Reinstate a suspended member (protocol admin) ──────────────────────────
+;; --- Reinstate a suspended member (protocol admin) --------------------------
 (define-public (reinstate-member (target principal))
   (begin
     (asserts! (is-eq tx-sender
-      (unwrap! (contract-call? PROTOCOL-CONFIG get-admin) ERR-NOT-AUTHORIZED))
+      (unwrap! (contract-call? .protocol-config get-admin) ERR-NOT-AUTHORIZED))
       ERR-NOT-AUTHORIZED)
     (let ((member (unwrap! (map-get? members { address: target }) ERR-NOT-A-MEMBER)))
       (asserts! (is-eq (get status member) STATUS-SUSPENDED) ERR-NOT-SUSPENDED)
@@ -289,7 +289,7 @@
   )
 )
 
-;; ─── Read-only helpers ───────────────────────────────────────────────────────
+;; --- Read-only helpers -------------------------------------------------------
 (define-read-only (get-member (address principal))
   (map-get? members { address: address })
 )
@@ -336,10 +336,7 @@
 (define-read-only (get-total-circles)   (ok (var-get total-circles)))
 (define-read-only (get-next-circle-id)  (ok (var-get next-circle-id)))
 
-;; ─── Internal: protocol paused passthrough ───────────────────────────────────
+;; --- Internal: protocol paused passthrough -----------------------------------
 (define-private (is-protocol-paused)
-  (match (contract-call? PROTOCOL-CONFIG is-paused)
-    v v
-    false
-  )
+  (unwrap-panic (contract-call? .protocol-config is-paused))
 )
