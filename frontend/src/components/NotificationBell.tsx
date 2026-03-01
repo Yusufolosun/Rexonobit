@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
+
 // ---------------------------------------------------------------------------
 // NotificationBell — pending-transaction count badge with dropdown
 // ---------------------------------------------------------------------------
