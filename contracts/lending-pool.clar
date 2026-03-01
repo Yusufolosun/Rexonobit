@@ -247,18 +247,14 @@
   (map-get? borrower-active-loan { borrower: borrower, circle-id: circle-id })
 )
 
-(define-public (get-max-loan-amount (borrower principal))
+(define-read-only (get-max-loan-amount (borrower principal))
   (let (
-    (score     (unwrap! (contract-call? .trust-score get-score borrower) (err u0)))
-    (max-bps   (default-to u5000
-                 (match (contract-call? .protocol-config get-param "max-loan-to-savings-bps")
-                   v (some v) err-v none)))
-    (locked    (default-to u0
-                 (match (contract-call? .savings-vault get-locked-balance borrower)
-                   ok-val (some ok-val)
-                   err-val none)))
+    (score      (unwrap! (contract-call? .trust-score get-score borrower) (err u0)))
+    (multiplier (default-to u5
+                  (match (contract-call? .protocol-config get-param "loan-max-multiplier")
+                    v (some v) err-v none)))
   )
-    (ok (/ (* locked max-bps) u10000))
+    (ok (* score multiplier))
   )
 )
 

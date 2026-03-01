@@ -101,11 +101,6 @@ plan:
       path: contracts/labor-market.clar
       clarity-version: 2
     - transaction-type: emulated-contract-publish
-      contract-name: savings-vault
-      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-      path: contracts/savings-vault.clar
-      clarity-version: 2
-    - transaction-type: emulated-contract-publish
       contract-name: lending-pool
       emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
       path: contracts/lending-pool.clar
@@ -119,6 +114,11 @@ plan:
       contract-name: rosca
       emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
       path: contracts/rosca.clar
+      clarity-version: 2
+    - transaction-type: emulated-contract-publish
+      contract-name: savings-vault
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/savings-vault.clar
       clarity-version: 2
     - transaction-type: emulated-contract-publish
       contract-name: synthetic-credit
