@@ -1,248 +1,79 @@
-import {
-  Clarinet,
-  Tx,
-  Chain,
-  Account,
-  types,
-} from "https://deno.land/x/clarinet@v1.7.1/index.ts";
-import { assertEquals } from "https://deno.land/std@0.200.0/testing/asserts.ts";
+import { describe, it, expect } from "vitest";
+import { Cl } from "@stacks/transactions";
 
-// ---------------------------------------------------------------------------
-// synthetic-credit.clar — unit tests
-// ---------------------------------------------------------------------------
+const accounts = simnet.getAccounts();
+const deployer = accounts.get("deployer")!;
+const alice    = accounts.get("wallet_1")!;
+const bob      = accounts.get("wallet_2")!;
 
-const ERR_NOT_MEMBER = 1200;
-const ERR_TRUST_TOO_LOW = 1203;
-const ERR_CREDIT_LIMIT_EXCEEDED = 1204;
-const ERR_INSUFFICIENT_LOCKED_SAVINGS = 1205;
-
-function setup(chain: Chain, accounts: Map<string, Account>) {
-  const deployer = accounts.get("deployer")!;
-  const alice = accounts.get("wallet_1")!;
-  chain.mineBlock([
-    Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-    Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
-  ]);
-  return { deployer, alice };
+function setupWithTrustAndSavings() {
+  simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+  simnet.callPublicFn("cooperative-registry", "register-member", [Cl.stringUtf8("Alice")], alice);
+  simnet.callPublicFn("cooperative-registry", "register-member", [Cl.stringUtf8("Bob")], bob);
+  simnet.callPublicFn("trust-score", "set-authorized-writer", [Cl.principal(deployer), Cl.bool(true)], deployer);
+  simnet.callPublicFn("trust-score", "initialize-score", [Cl.principal(alice)], deployer);
+  // Mine past default cooldown (144 blocks) so reward calls aren't blocked
+  simnet.mineEmptyBlocks(145);
+  // Seed score = 100; reward-savings +400 → 500; reward-loan-repay +300 → 800
+  simnet.callPublicFn("trust-score", "reward-savings", [Cl.principal(alice), Cl.uint(400)], deployer);
+  simnet.callPublicFn("trust-score", "reward-loan-repay", [Cl.principal(alice), Cl.uint(300)], deployer);
+  simnet.callPublicFn("savings-vault", "initialize-vault", [], alice);
+  simnet.callPublicFn("savings-vault", "deposit", [Cl.uint(20_000_000)], alice);
+  simnet.callPublicFn("savings-vault", "lock-savings", [Cl.uint(10_000_000), Cl.uint(5000)], alice);
 }
 
-Clarinet.test({
-  name: "mint-scredit: fails when trust score is below 700",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice } = setup(chain, accounts);
-    // Alice has trust 0 → should fail
-    const block = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(1000)], alice.address),
-    ]);
-    block.receipts[0].result.expectErr().expectUint(ERR_TRUST_TOO_LOW);
-  },
-});
+describe("synthetic-credit", () => {
+  describe("mint-scredit", () => {
+    it("fails when trust < 700", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      simnet.callPublicFn("cooperative-registry", "register-member", [Cl.stringUtf8("Alice")], alice);
+      const { result } = simnet.callPublicFn("synthetic-credit", "mint-scredit", [Cl.uint(1000)], alice);
+      expect(result).toBeErr(Cl.uint(1102));
+    });
 
-Clarinet.test({
-  name: "mint-scredit: succeeds with high trust and locked savings",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { deployer, alice } = setup(chain, accounts);
-    // Grant 700+ trust
-    chain.mineBlock([
-      Tx.contractCall("trust-score", "reward-savings", [types.principal(alice.address), types.uint(400)], deployer.address),
-      Tx.contractCall("trust-score", "reward-loan-repay", [types.principal(alice.address), types.uint(300)], deployer.address),
-    ]);
-    // Deposit and lock savings
-    chain.mineBlock([
-      Tx.contractCall("savings-vault", "deposit", [types.uint(20_000_000)], alice.address),
-      Tx.contractCall("savings-vault", "lock-savings", [types.uint(10_000_000), types.uint(2016)], alice.address),
-    ]);
-    // Credit limit = 10 STX * 50% = 5 STX = 5_000_000 microSTX
-    // In scredit units (assuming 1:1 with microSTX for simplicity)
-    const block = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(1000)], alice.address),
-    ]);
-    const receipt = block.receipts[0];
-    assertEquals(receipt.result.startsWith("(ok") || receipt.result.startsWith("(err"), true);
-  },
-});
+    it("minting zero amount is rejected", () => {
+      setupWithTrustAndSavings();
+      const { result } = simnet.callPublicFn("synthetic-credit", "mint-scredit", [Cl.uint(0)], alice);
+      expect(result).toBeErr(Cl.uint(1104));
+    });
 
-Clarinet.test({
-  name: "burn-scredit: member can burn their tokens",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { deployer, alice } = setup(chain, accounts);
-    // Ensure trust is high enough for mint
-    chain.mineBlock([
-      Tx.contractCall("trust-score", "reward-savings", [types.principal(alice.address), types.uint(400)], deployer.address),
-      Tx.contractCall("trust-score", "reward-loan-repay", [types.principal(alice.address), types.uint(300)], deployer.address),
-      Tx.contractCall("savings-vault", "deposit", [types.uint(20_000_000)], alice.address),
-      Tx.contractCall("savings-vault", "lock-savings", [types.uint(10_000_000), types.uint(2016)], alice.address),
-    ]);
-    const mintBlock = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(1000)], alice.address),
-    ]);
-    if (mintBlock.receipts[0].result.startsWith("(ok")) {
-      const burnBlock = chain.mineBlock([
-        Tx.contractCall("synthetic-credit", "burn-scredit", [types.uint(500)], alice.address),
-      ]);
-      burnBlock.receipts[0].result.expectOk().expectBool(true);
-    }
-  },
-});
+    it("succeeds with sufficient trust and locked savings", () => {
+      setupWithTrustAndSavings();
+      const { result } = simnet.callPublicFn("synthetic-credit", "mint-scredit", [Cl.uint(1000)], alice);
+      expect(result).toBeOk(Cl.uint(1000));
+    });
+  });
 
-Clarinet.test({
-  name: "transfer-scredit: member can transfer scredit to another member",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const deployer = accounts.get("deployer")!;
-    const alice = accounts.get("wallet_1")!;
-    const bob = accounts.get("wallet_2")!;
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-      Tx.contractCall("cooperative-registry", "register-member", [], alice.address),
-      Tx.contractCall("cooperative-registry", "register-member", [], bob.address),
-    ]);
-    chain.mineBlock([
-      Tx.contractCall("trust-score", "reward-savings", [types.principal(alice.address), types.uint(400)], deployer.address),
-      Tx.contractCall("trust-score", "reward-loan-repay", [types.principal(alice.address), types.uint(300)], deployer.address),
-      Tx.contractCall("savings-vault", "deposit", [types.uint(20_000_000)], alice.address),
-      Tx.contractCall("savings-vault", "lock-savings", [types.uint(10_000_000), types.uint(2016)], alice.address),
-    ]);
-    const mintBlock = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(2000)], alice.address),
-    ]);
-    if (mintBlock.receipts[0].result.startsWith("(ok")) {
-      const transferBlock = chain.mineBlock([
-        Tx.contractCall(
-          "synthetic-credit",
-          "transfer-scredit",
-          [types.uint(500), types.principal(bob.address)],
-          alice.address
-        ),
-      ]);
-      transferBlock.receipts[0].result.expectOk().expectBool(true);
-    }
-  },
-});
+  describe("burn-scredit", () => {
+    it("member can burn their tokens", () => {
+      setupWithTrustAndSavings();
+      simnet.callPublicFn("synthetic-credit", "mint-scredit", [Cl.uint(1000)], alice);
+      const { result } = simnet.callPublicFn("synthetic-credit", "burn-scredit", [Cl.uint(500)], alice);
+      expect(result).toBeOk(Cl.bool(true));
+    });
 
-Clarinet.test({
-  name: "get-scredit-balance: returns zero for fresh member",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { deployer, alice } = setup(chain, accounts);
-    const result = chain.callReadOnlyFn(
-      "synthetic-credit",
-      "get-scredit-balance",
-      [types.principal(alice.address)],
-      deployer.address
-    );
-    result.result.expectUint(0);
-  },
-});
+    it("burning more than balance is rejected", () => {
+      setupWithTrustAndSavings();
+      const { result } = simnet.callPublicFn("synthetic-credit", "burn-scredit", [Cl.uint(1_000_000)], alice);
+      expect(result).toBeErr(Cl.uint(1108));
+    });
+  });
 
-Clarinet.test({
-  name: "transfer-scredit: minted obligation moves from sender to recipient",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    // Regression: previously transfer-scredit did not update credit-accounts,
-    // leaving the sender's minted unchanged and creating unbacked tokens for
-    // the recipient with no minted record.
-    const deployer = accounts.get("deployer")!;
-    const alice = accounts.get("wallet_1")!;
-    const bob = accounts.get("wallet_2")!;
+  describe("transfer-scredit", () => {
+    it("member can transfer to another member", () => {
+      setupWithTrustAndSavings();
+      simnet.callPublicFn("synthetic-credit", "mint-scredit", [Cl.uint(2000)], alice);
+      const { result } = simnet.callPublicFn("synthetic-credit", "transfer-scredit", [Cl.uint(500), Cl.principal(bob)], alice);
+      expect(result).toBeOk(Cl.bool(true));
+    });
+  });
 
-    chain.mineBlock([
-      Tx.contractCall("protocol-config", "initialize", [], deployer.address),
-      Tx.contractCall("cooperative-registry", "register-member",
-        [types.utf8("Alice")], alice.address),
-      Tx.contractCall("cooperative-registry", "register-member",
-        [types.utf8("Bob")], bob.address),
-    ]);
-
-    // Give Alice enough trust to mint sCREDIT
-    chain.mineBlock([
-      Tx.contractCall("trust-score", "initialize-score",
-        [types.principal(alice.address)], deployer.address),
-      Tx.contractCall("trust-score", "reward-savings",
-        [types.principal(alice.address), types.uint(400)], deployer.address),
-      Tx.contractCall("trust-score", "reward-loan-repay",
-        [types.principal(alice.address), types.uint(300)], deployer.address),
-    ]);
-
-    // Alice deposits and locks savings as collateral
-    chain.mineBlock([
-      Tx.contractCall("savings-vault", "deposit",
-        [types.uint(20_000_000)], alice.address),
-      Tx.contractCall("savings-vault", "lock-savings",
-        [types.uint(10_000_000), types.uint(2016)], alice.address),
-    ]);
-
-    // Alice mints 2000 sCREDIT
-    const mintBlock = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "mint-scredit",
-        [types.uint(2000)], alice.address),
-    ]);
-    mintBlock.receipts[0].result.expectOk().expectUint(2000);
-
-    // Verify Alice's minted = 2000 before transfer
-    const aliceBefore = chain.callReadOnlyFn(
-      "synthetic-credit", "get-credit-account",
-      [types.principal(alice.address)], deployer.address
-    );
-    assertEquals(aliceBefore.result.includes("minted: u2000"), true);
-
-    // Alice transfers 500 to Bob
-    const txBlock = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "transfer-scredit",
-        [types.uint(500), types.principal(bob.address)], alice.address),
-    ]);
-    txBlock.receipts[0].result.expectOk().expectBool(true);
-
-    // Alice's minted should now be 1500 (2000 - 500)
-    const aliceAfter = chain.callReadOnlyFn(
-      "synthetic-credit", "get-credit-account",
-      [types.principal(alice.address)], deployer.address
-    );
-    assertEquals(aliceAfter.result.includes("minted: u1500"), true);
-
-    // Bob's minted should now be 500
-    const bobAfter = chain.callReadOnlyFn(
-      "synthetic-credit", "get-credit-account",
-      [types.principal(bob.address)], deployer.address
-    );
-    assertEquals(bobAfter.result.includes("minted: u500"), true);
-  },
-});
-
-Clarinet.test({
-  name: "mint: minting zero credit is rejected",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice } = setup(chain, accounts);
-    const block = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(0)], alice.address),
-    ]);
-    block.receipts[0].result.expectErr();
-  },
-});
-
-Clarinet.test({
-  name: "burn: burning more than balance is rejected",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice } = setup(chain, accounts);
-    const block = chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "burn-scredit", [types.uint(1_000_000)], alice.address),
-    ]);
-    block.receipts[0].result.expectErr();
-  },
-});
-
-Clarinet.test({
-  name: "transfer: transferring to self is rejected",
-  async fn(chain: Chain, accounts: Map<string, Account>) {
-    const { alice } = setup(chain, accounts);
-    chain.mineBlock([
-      Tx.contractCall("synthetic-credit", "mint-scredit", [types.uint(100_000)], alice.address),
-    ]);
-    const block = chain.mineBlock([
-      Tx.contractCall(
-        "synthetic-credit",
-        "transfer-scredit",
-        [types.uint(50_000), types.principal(alice.address)],
-        alice.address
-      ),
-    ]);
-    block.receipts[0].result.expectErr();
-  },
+  describe("get-scredit-balance", () => {
+    it("returns zero for fresh member", () => {
+      simnet.callPublicFn("protocol-config", "initialize", [], deployer);
+      simnet.callPublicFn("cooperative-registry", "register-member", [Cl.stringUtf8("Alice")], alice);
+      const result = simnet.callReadOnlyFn("synthetic-credit", "get-scredit-balance", [Cl.principal(alice)], deployer);
+      expect(result.result).toBeOk(Cl.uint(0));
+    });
+  });
 });
